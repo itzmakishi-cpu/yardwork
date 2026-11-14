@@ -1,3 +1,77 @@
+Conversation Log
+Create a hyper-realistic, fully playable 3D first-person yard-work simulation game contained entirely in a single, standalone "index.html" file (including HTML, CSS, Tailwind/CSS styling, and JavaScript via CDNs like Three.js and Cannon.js/Cannon-es for physics). The code must be production-ready, highly optimized, bug-free, and ready to deploy directly to GitHub Pages.
+
+───
+
+1. CORE VISUALS & ATMOSPHERE ("Hyper-Realistic" Style)
+• Engine & Renderer: Three.js with WebGLRenderer, PCFSoftShadowMap, realistic lighting, directional sunlight with soft shadows, atmospheric fog, and ambient occlusion.
+• Environment & Seasons: A realistic suburban house yard with a driveway, wooden fence, a central trailer, and trees that visually change every season (e.g., snow-covered trailer and trees in winter, lush in summer, muddy/bare in spring, colorful in autumn).
+• Level Completion: Debris (leaves, snow, grass) does NOT spawn infinitely. Once the current round's quota is fully cleared, the round is complete, the player gets paid, and they progress to the next phase.
+
+───
+
+2. EXACT SEASONAL PROGRESSION & GAMEPLAY LOOP
+The game follows a strict, repeating seasonal cycle with specific round counts and rules:
+
+1. Autumn (Fall):
+◦ Task: Clear falling leaves.
+◦ Duration: 3 to 4 intensive leaf-clearing rounds.
+◦ Income: Earns money per cleared leaf pile dumped into the trailer.
+◦ Leaves stop falling once the round target is reached.
+2. Winter:
+◦ Task: Shovel snow and pile it up at a specific designated boundary marker in the yard.
+◦ Duration: 5 to 7 snow-clearing rounds in a row.
+◦ Income: No direct money earned.
+◦ Consequence / Penalty Timer: If the player fails to clear the snow within a specific time limit before spring arrives, the grass beneath rots/dies. This creates more bare patches in the upcoming spring, requiring more grass seeds.
+3. Spring:
+◦ Task: Sow grass seeds (only onto bare soil patches where grass is missing) and water them using a watering can.
+◦ Duration: Exactly 1 precise seeding/watering round.
+◦ Income: No money earned (costs money for seeds).
+◦ Credit / Loan System: If the player runs out of money and cannot afford the required grass seeds (especially due to severe winter snow damage), a Credit/Loan system triggers. The player can take a bank loan to buy seeds, which creates a negative balance / debt that must be automatically paid back using income earned from subsequent leaf and grass rounds.
+4. Summer:
+◦ Task: Mow the lawn with a lawn mower.
+◦ Duration: 3 to 4 mowing rounds.
+◦ Income: Earns money from selling mowed grass/clippings.
+
+───
+
+3. TOOLS, PHYSICS & INVENTORY SYSTEM
+• First-Person Perspective: PointerLockControls (click to lock mouse, WASD to move, mouse to look around).
+• Physics & Interaction: Raycasting to interact with tools and objects. 
+◦ Rake / Leaf Blower: Gathers and blows leaves into piles.
+◦ Snow Shovel: Clears and pushes snow to the designated boundary.
+◦ Lawn Mower: Cuts grass smoothly.
+◦ Watering Can & Seed Spreader: Used in spring.
+• Inventory & Capacity:
+◦ Limited hand and bag capacity. When full, walk back to the trailer to empty.
+◦ Shop System: Spend earned cash on upgrades: 
+▪ Larger backpack/sack capacity & hand capacity.
+▪ Stronger leaf blower, wider rake, better snow shovel, advanced mower.
+▪ Automatic seed spreaders.
+
+───
+
+4. UI, HUD & POLISH
+• HUD: Clean overlay showing: 
+◦ Current Season & Round Progress (e.g., "Winter - Shoveling 4/6").
+◦ Money / Balance ($) and Active Debt / Credit status if applicable.
+◦ Current Inventory / Bag Capacity bar.
+◦ Active Tool display (hotkeys 1-5 or scroll wheel).
+• Shop & Bank Menu: Sleek modal menus for buying upgrades, tools, and managing loans/credits when bankrupt.
+• Sound Effects: Procedural Web Audio API sound effects for blowing, shovelling, mowing, and coin collection.
+
+───
+
+5. CODE REQUIREMENTS
+• Output the entire game in one single markdown code block containing valid HTML.
+• Include robust error handling, responsive canvas resizing, smooth 60 FPS animation loop (requestAnimationFrame), and clear inline comments explaining game logic.
+• Ensure all CDN scripts load reliably.
+
+Here is the complete, production-ready, standalone index.html file for Suburban Yard Master — a hyper-realistic 3D first-person yard-work simulation game powered by Three.js, procedural textures, procedural Web Audio API sound synthesis, and Tailwind CSS.
+
+The file has also been saved directly to your workspace at index.html and is ready for immediate deployment to GitHub Pages.
+
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,7 +86,6 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
-
     body {
       margin: 0;
       padding: 0;
@@ -22,7 +95,6 @@
       background-color: #0b0f19;
       color: #f8fafc;
     }
-
     #game-canvas {
       position: absolute;
       top: 0;
@@ -32,7 +104,6 @@
       display: block;
       z-index: 1;
     }
-
     /* Crosshair */
     #crosshair {
       position: absolute;
@@ -73,7 +144,6 @@
       background: #38bdf8;
       transform: scale(1.3);
     }
-
     /* Glassmorphism Panels */
     .hud-panel {
       background: rgba(15, 23, 42, 0.75);
@@ -82,7 +152,6 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
-
     /* Tool Hotbar active slot glow */
     .tool-slot {
       transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -93,7 +162,6 @@
       box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 10px rgba(56, 189, 248, 0.2);
       transform: translateY(-4px) scale(1.04);
     }
-
     /* Custom Scrollbar for modals */
     ::-webkit-scrollbar {
       width: 6px;
@@ -108,7 +176,6 @@
     ::-webkit-scrollbar-thumb:hover {
       background: rgba(148, 163, 184, 0.7);
     }
-
     /* Floating Interaction Prompt */
     @keyframes bouncePrompt {
       0%, 100% { transform: translate(-50%, 0); }
@@ -117,7 +184,6 @@
     .prompt-animate {
       animation: bouncePrompt 1.4s ease-in-out infinite;
     }
-
     /* Danger Pulse for Winter Penalty */
     @keyframes dangerPulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -129,16 +195,13 @@
   </style>
 </head>
 <body class="select-none bg-slate-950 text-slate-100">
-
   <!-- 3D Canvas -->
   <canvas id="game-canvas"></canvas>
-
   <!-- Crosshair Overlay -->
   <div id="crosshair">
     <div class="crosshair-ring"></div>
     <div class="crosshair-dot"></div>
   </div>
-
   <!-- HUD LAYER (Z-INDEX 10) -->
   <div id="hud" class="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-4 md:p-6">
     
@@ -162,7 +225,6 @@
             <span id="round-progress-text" class="text-xs font-mono font-medium text-slate-300">0 / 45</span>
           </div>
         </div>
-
         <!-- Winter Timer (Visible only in Winter) -->
         <div id="winter-timer-container" class="hidden pl-4 border-l border-slate-700/80 flex items-center gap-2.5">
           <div class="text-red-400 text-xl font-bold">⏱️</div>
@@ -172,7 +234,6 @@
           </div>
         </div>
       </div>
-
       <!-- Money, Debt & Quick Action Buttons -->
       <div class="flex items-center gap-3 self-end md:self-auto pointer-events-auto">
         <!-- Balance / Debt Panel -->
@@ -186,7 +247,6 @@
             <div id="debt-display" class="font-mono text-xl font-black text-rose-400">-$0.00</div>
           </div>
         </div>
-
         <!-- Shop & Bank Action Buttons -->
         <button id="btn-open-shop" class="hud-panel hover:bg-slate-800/80 active:scale-95 transition rounded-2xl p-3 px-4 flex items-center gap-2 border border-sky-500/30 text-sky-300 font-bold text-sm shadow-lg pointer-events-auto">
           <span>🛒</span>
@@ -197,9 +257,7 @@
           <span class="hidden sm:inline">Bank [M]</span>
         </button>
       </div>
-
     </div>
-
     <!-- CENTER DYNAMIC INTERACTION PROMPTS -->
     <div id="interaction-prompt-container" class="self-center mb-8 flex flex-col items-center gap-2 transition-all duration-200 opacity-0 pointer-events-none">
       <div id="interaction-prompt" class="hud-panel prompt-animate px-6 py-3 rounded-full border border-sky-400/40 text-slate-100 font-bold text-sm md:text-base flex items-center gap-3 shadow-2xl">
@@ -207,7 +265,6 @@
         <span id="prompt-text">Dump Leaves into Trailer (+$25.00)</span>
       </div>
     </div>
-
     <!-- BOTTOM ROW: Inventory Capacity Bar & Hotbar -->
     <div class="flex flex-col md:flex-row items-end md:items-end justify-between gap-4">
       
@@ -226,7 +283,6 @@
           ⚠️ BAG FULL! EMPTY AT TRAILER [E]
         </div>
       </div>
-
       <!-- Tools Hotbar -->
       <div class="hud-panel rounded-2xl p-2 px-3 flex items-center gap-2 self-center md:self-auto pointer-events-auto">
         <!-- Slot 1: Blower / Rake -->
@@ -260,7 +316,6 @@
           <span class="text-[9px] font-bold text-slate-300 mt-0.5">Water</span>
         </button>
       </div>
-
       <!-- Controls Reminder / Help -->
       <div class="hidden lg:flex hud-panel rounded-2xl p-2.5 px-4 items-center gap-3 text-xs text-slate-400">
         <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-200">WASD</span> Move</div>
@@ -268,14 +323,10 @@
         <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-200">L-CLICK</span> Use Tool</div>
         <div class="flex items-center gap-1.5"><span class="px-1.5 py-0.5 rounded bg-slate-800 font-mono text-slate-200">E</span> Dump</div>
       </div>
-
     </div>
-
   </div>
-
   <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container" class="absolute top-24 left-1/2 -translate-x-1/2 z-30 pointer-events-none flex flex-col items-center gap-2"></div>
-
   <!-- START / WELCOME MODAL -->
   <div id="modal-start" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
     <div class="hud-panel max-w-xl w-full rounded-3xl p-6 md:p-8 text-center border border-white/20 shadow-2xl relative overflow-hidden">
@@ -285,7 +336,6 @@
       <p class="text-slate-300 text-sm md:text-base mb-6 leading-relaxed">
         Experience hyper-realistic seasonal yard care. Manage a real suburban lawn through Autumn, Winter, Spring, and Summer with authentic tools, bag capacity, trailer dumping, loans, and lawn restoration.
       </p>
-
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left mb-6 font-mono text-xs">
         <div class="bg-amber-950/40 border border-amber-500/30 rounded-xl p-3">
           <div class="font-bold text-amber-400 text-sm mb-1">1. Autumn</div>
@@ -304,14 +354,12 @@
           <div class="text-slate-300">Mow tall lawn & sell clippings at trailer to pay debt. (3 Rounds)</div>
         </div>
       </div>
-
       <button id="btn-start-game" class="w-full py-4 px-8 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-extrabold text-lg shadow-xl shadow-emerald-500/25 active:scale-98 transition transform">
         CLICK TO CLOCK IN & START
       </button>
       <div class="text-xs text-slate-400 mt-3">Controls: WASD to Move, Mouse to Look, Click to Use, 1-5 Tools, E Dump, ESC Pause</div>
     </div>
   </div>
-
   <!-- PAUSE MODAL -->
   <div id="modal-pause" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4">
     <div class="hud-panel max-w-md w-full rounded-3xl p-6 text-center border border-white/20 shadow-2xl">
@@ -332,7 +380,6 @@
       </div>
     </div>
   </div>
-
   <!-- EQUIPMENT SHOP MODAL -->
   <div id="modal-shop" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
     <div class="hud-panel max-w-2xl w-full rounded-3xl p-6 md:p-8 border border-white/20 shadow-2xl max-h-[90vh] flex flex-col">
@@ -346,12 +393,10 @@
         </div>
         <button id="btn-close-shop" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-lg font-bold">✕</button>
       </div>
-
       <!-- Shop Items List -->
       <div id="shop-items-container" class="overflow-y-auto py-4 space-y-3.5 pr-1 flex-1">
         <!-- Injected dynamically via JS -->
       </div>
-
       <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
         <div>
           <span class="text-xs text-slate-400 font-bold">YOUR BALANCE:</span>
@@ -361,7 +406,6 @@
       </div>
     </div>
   </div>
-
   <!-- LAWN BANK & CREDIT MODAL -->
   <div id="modal-bank" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
     <div class="hud-panel max-w-lg w-full rounded-3xl p-6 md:p-8 border border-white/20 shadow-2xl">
@@ -375,7 +419,6 @@
         </div>
         <button id="btn-close-bank" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-lg font-bold">✕</button>
       </div>
-
       <div class="py-4 space-y-4">
         <!-- Account Status Box -->
         <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 flex justify-between items-center">
@@ -388,9 +431,7 @@
             Pay Off $50
           </button>
         </div>
-
         <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Available Contractor Credit Lines (10% Fee)</div>
-
         <!-- Loan Options -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <!-- Loan 1 -->
@@ -404,7 +445,6 @@
               Accept
             </button>
           </div>
-
           <!-- Loan 2 -->
           <div class="bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700 rounded-2xl p-3.5 flex flex-col justify-between transition">
             <div>
@@ -416,7 +456,6 @@
               Accept
             </button>
           </div>
-
           <!-- Loan 3 -->
           <div class="bg-slate-800/50 hover:bg-slate-800/80 border border-slate-700 rounded-2xl p-3.5 flex flex-col justify-between transition">
             <div>
@@ -429,15 +468,12 @@
             </button>
           </div>
         </div>
-
       </div>
-
       <div class="pt-3 border-t border-slate-800 text-right">
         <button id="btn-bank-done" class="py-2.5 px-6 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm">Close Bank</button>
       </div>
     </div>
   </div>
-
   <!-- SEASON TRANSITION SPLASH SCREEN -->
   <div id="modal-season" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/90 backdrop-blur-lg p-4">
     <div class="hud-panel max-w-lg w-full rounded-3xl p-8 text-center border border-white/20 shadow-2xl relative">
@@ -446,25 +482,21 @@
       <p id="season-splash-desc" class="text-slate-300 text-sm mb-6 leading-relaxed">
         The temperature has plunged. Shovel snow and pile it at the yard boundary marker before time expires to protect your lawn roots from rot!
       </p>
-
       <div id="season-splash-stats" class="bg-slate-900/80 rounded-2xl p-4 border border-slate-800 mb-6 font-mono text-xs text-left space-y-1.5">
         <div class="flex justify-between"><span class="text-slate-400">Round Bonus Earned:</span> <span id="stat-bonus" class="text-emerald-400 font-bold">+$50.00</span></div>
         <div class="flex justify-between"><span class="text-slate-400">Total Money:</span> <span id="stat-money" class="text-white font-bold">$125.00</span></div>
         <div class="flex justify-between"><span class="text-slate-400">Turf Health:</span> <span id="stat-health" class="text-emerald-400 font-bold">100% (No Rot)</span></div>
       </div>
-
       <button id="btn-continue-season" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 text-white font-black text-base shadow-xl active:scale-98 transition">
         CONTINUE TO NEXT ROUND
       </button>
     </div>
   </div>
-
   <!-- JAVASCRIPT GAME LOGIC -->
   <script>
     /* ==========================================================================
        SUBURBAN YARD MASTER - COMPLETE 3D SIMULATION ENGINE
        ========================================================================== */
-
     // Fallback for PointerLockControls if CDN takes time or fails
     if (typeof THREE.PointerLockControls === 'undefined') {
       THREE.PointerLockControls = function(camera, domElement) {
@@ -477,7 +509,6 @@
         var unlockEvent = { type: 'unlock' };
         var euler = new THREE.Euler(0, 0, 0, 'YXZ');
         var PI_2 = Math.PI / 2;
-
         function onMouseMove(event) {
           if (scope.isLocked === false) return;
           var movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
@@ -489,7 +520,6 @@
           camera.quaternion.setFromEuler(euler);
           scope.dispatchEvent(changeEvent);
         }
-
         function onPointerlockChange() {
           if (scope.domElement.ownerDocument.pointerLockElement === scope.domElement) {
             scope.dispatchEvent(lockEvent);
@@ -499,7 +529,6 @@
             scope.isLocked = false;
           }
         }
-
         this.connect = function() {
           scope.domElement.ownerDocument.addEventListener('mousemove', onMouseMove, false);
           scope.domElement.ownerDocument.addEventListener('pointerlockchange', onPointerlockChange, false);
@@ -517,7 +546,6 @@
       THREE.PointerLockControls.prototype = Object.create(THREE.EventDispatcher.prototype);
       THREE.PointerLockControls.prototype.constructor = THREE.PointerLockControls;
     }
-
     /* --------------------------------------------------------------------------
        1. GAME STATE & CONSTANTS
        -------------------------------------------------------------------------- */
@@ -567,7 +595,6 @@
       isGameActive: false,
       isPaused: false
     };
-
     /* --------------------------------------------------------------------------
        2. PROCEDURAL WEB AUDIO API SYNTHESIZER
        -------------------------------------------------------------------------- */
@@ -581,7 +608,6 @@
         this.waterNode = null;
         this.waterGain = null;
       }
-
       init() {
         if (!this.ctx) {
           const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -591,7 +617,6 @@
           this.ctx.resume();
         }
       }
-
       // Procedural white noise buffer generator
       createNoiseBuffer(seconds = 1) {
         const bufferSize = this.ctx.sampleRate * seconds;
@@ -602,14 +627,12 @@
         }
         return buffer;
       }
-
       // Footstep sound based on surface
       playFootstep(surface = 'grass') {
         if (!STATE.soundEnabled || !this.ctx) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         const filter = this.ctx.createBiquadFilter();
-
         if (surface === 'snow') {
           // Crunchy high-passed snow step
           const noise = this.ctx.createBufferSource();
@@ -647,29 +670,24 @@
           osc.stop(this.ctx.currentTime + 0.07);
         }
       }
-
       // Leaf Blower continuous sound
       startBlower() {
         if (!STATE.soundEnabled || !this.ctx || this.blowerNode) return;
         this.blowerNode = this.ctx.createBufferSource();
         this.blowerNode.buffer = this.createNoiseBuffer(2);
         this.blowerNode.loop = true;
-
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(850, this.ctx.currentTime);
         filter.Q.setValueAtTime(3.0, this.ctx.currentTime);
-
         this.blowerGain = this.ctx.createGain();
         this.blowerGain.gain.setValueAtTime(0.01, this.ctx.currentTime);
         this.blowerGain.gain.linearRampToValueAtTime(0.15, this.ctx.currentTime + 0.1);
-
         this.blowerNode.connect(filter);
         filter.connect(this.blowerGain);
         this.blowerGain.connect(this.ctx.destination);
         this.blowerNode.start();
       }
-
       stopBlower() {
         if (this.blowerGain && this.ctx) {
           this.blowerGain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
@@ -681,50 +699,41 @@
           }, 160);
         }
       }
-
       // Snow shovel scoop scrape sound
       playShovelScrape() {
         if (!STATE.soundEnabled || !this.ctx) return;
         const noise = this.ctx.createBufferSource();
         noise.buffer = this.createNoiseBuffer(0.25);
-
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(1200, this.ctx.currentTime);
         filter.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + 0.25);
         filter.Q.setValueAtTime(1.8, this.ctx.currentTime);
-
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.16, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.25);
-
         noise.connect(filter);
         filter.connect(gain);
         gain.connect(this.ctx.destination);
         noise.start();
       }
-
       // Lawn Mower engine sound
       startMower() {
         if (!STATE.soundEnabled || !this.ctx || this.mowerOsc) return;
         this.mowerOsc = this.ctx.createOscillator();
         this.mowerOsc.type = 'sawtooth';
         this.mowerOsc.frequency.setValueAtTime(65, this.ctx.currentTime);
-
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(450, this.ctx.currentTime);
-
         this.mowerGain = this.ctx.createGain();
         this.mowerGain.gain.setValueAtTime(0.01, this.ctx.currentTime);
         this.mowerGain.gain.linearRampToValueAtTime(0.18, this.ctx.currentTime + 0.15);
-
         this.mowerOsc.connect(filter);
         filter.connect(this.mowerGain);
         this.mowerGain.connect(this.ctx.destination);
         this.mowerOsc.start();
       }
-
       stopMower() {
         if (this.mowerGain && this.ctx) {
           this.mowerGain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
@@ -736,7 +745,6 @@
           }, 160);
         }
       }
-
       // Seed scatter rattle sound
       playSeedScatter() {
         if (!STATE.soundEnabled || !this.ctx) return;
@@ -755,29 +763,24 @@
           }, i * 35);
         }
       }
-
       // Watering can stream sound
       startWatering() {
         if (!STATE.soundEnabled || !this.ctx || this.waterNode) return;
         this.waterNode = this.ctx.createBufferSource();
         this.waterNode.buffer = this.createNoiseBuffer(1.5);
         this.waterNode.loop = true;
-
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.setValueAtTime(950, this.ctx.currentTime);
         filter.Q.setValueAtTime(1.2, this.ctx.currentTime);
-
         this.waterGain = this.ctx.createGain();
         this.waterGain.gain.setValueAtTime(0.01, this.ctx.currentTime);
         this.waterGain.gain.linearRampToValueAtTime(0.12, this.ctx.currentTime + 0.1);
-
         this.waterNode.connect(filter);
         filter.connect(this.waterGain);
         this.waterGain.connect(this.ctx.destination);
         this.waterNode.start();
       }
-
       stopWatering() {
         if (this.waterGain && this.ctx) {
           this.waterGain.gain.linearRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
@@ -789,7 +792,6 @@
           }, 120);
         }
       }
-
       // Cash register cha-ching sound
       playCash() {
         if (!STATE.soundEnabled || !this.ctx) return;
@@ -797,28 +799,22 @@
         const osc1 = this.ctx.createOscillator();
         const osc2 = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
-
         osc1.type = 'sine';
         osc1.frequency.setValueAtTime(987.77, t); // B5
         osc1.frequency.setValueAtTime(1318.51, t + 0.08); // E6
-
         osc2.type = 'triangle';
         osc2.frequency.setValueAtTime(1567.98, t + 0.08); // G6
         osc2.frequency.setValueAtTime(1975.53, t + 0.16); // B6
-
         gain.gain.setValueAtTime(0.18, t);
         gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
-
         osc1.connect(gain);
         osc2.connect(gain);
         gain.connect(this.ctx.destination);
-
         osc1.start(t);
         osc2.start(t + 0.08);
         osc1.stop(t + 0.45);
         osc2.stop(t + 0.45);
       }
-
       // Level / Round completion fanfare
       playRoundWin() {
         if (!STATE.soundEnabled || !this.ctx) return;
@@ -837,7 +833,6 @@
           osc.stop(t + 0.35);
         });
       }
-
       // Warning chime (Winter timer or full bag)
       playWarning() {
         if (!STATE.soundEnabled || !this.ctx) return;
@@ -855,9 +850,7 @@
         osc.stop(t + 0.25);
       }
     }
-
     const sound = new SoundEngine();
-
     /* --------------------------------------------------------------------------
        3. PROCEDURAL TEXTURE GENERATION (HIGH RESOLUTION & REALISTIC)
        -------------------------------------------------------------------------- */
@@ -868,7 +861,6 @@
         canvas.width = 512;
         canvas.height = 512;
         const ctx = canvas.getContext('2d');
-
         let baseColor, darkBlade, lightBlade;
         if (season === 'AUTUMN') {
           baseColor = '#606c38';
@@ -887,10 +879,8 @@
           darkBlade = '#1b4332';
           lightBlade = '#40916c';
         }
-
         ctx.fillStyle = baseColor;
         ctx.fillRect(0, 0, 512, 512);
-
         // Blade strokes
         for (let i = 0; i < 7000; i++) {
           const x = Math.random() * 512;
@@ -903,14 +893,12 @@
           ctx.lineTo(x + (Math.random() - 0.5) * 4, y - len);
           ctx.stroke();
         }
-
         const texture = new THREE.CanvasTexture(canvas);
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(12, 12);
         return texture;
       },
-
       // Asphalt texture for driveway
       createAsphalt() {
         const canvas = document.createElement('canvas');
@@ -919,7 +907,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#26292b';
         ctx.fillRect(0, 0, 512, 512);
-
         // Pebbles & aggregate
         for (let i = 0; i < 9000; i++) {
           const x = Math.random() * 512;
@@ -934,7 +921,6 @@
         texture.repeat.set(4, 10);
         return texture;
       },
-
       // Cedar wood fence planks
       createWood() {
         const canvas = document.createElement('canvas');
@@ -943,7 +929,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#78350f'; // Dark amber cedar
         ctx.fillRect(0, 0, 512, 512);
-
         ctx.strokeStyle = '#451a03';
         ctx.lineWidth = 1;
         for (let i = 0; i < 800; i++) {
@@ -959,7 +944,6 @@
         texture.repeat.set(2, 2);
         return texture;
       },
-
       // Tree Bark
       createBark() {
         const canvas = document.createElement('canvas');
@@ -968,7 +952,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#3f2e21';
         ctx.fillRect(0, 0, 256, 512);
-
         ctx.strokeStyle = '#1e140d';
         ctx.lineWidth = 2;
         for (let i = 0; i < 400; i++) {
@@ -984,7 +967,6 @@
         texture.repeat.set(2, 4);
         return texture;
       },
-
       // Suburban house siding
       createSiding() {
         const canvas = document.createElement('canvas');
@@ -993,7 +975,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#cbd5e1'; // Clean vinyl light slate
         ctx.fillRect(0, 0, 256, 256);
-
         // Horizontal lap siding boards with drop shadow
         const plankHeight = 32;
         for (let y = 0; y < 256; y += plankHeight) {
@@ -1008,7 +989,6 @@
         texture.repeat.set(4, 6);
         return texture;
       },
-
       // Roof shingles
       createRoof() {
         const canvas = document.createElement('canvas');
@@ -1017,7 +997,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#334155';
         ctx.fillRect(0, 0, 256, 256);
-
         for (let y = 0; y < 256; y += 24) {
           ctx.fillStyle = '#1e293b';
           ctx.fillRect(0, y, 256, 2);
@@ -1031,7 +1010,6 @@
         texture.repeat.set(6, 6);
         return texture;
       },
-
       // Bare Soil / Mud Patch Texture for Spring
       createSoil() {
         const canvas = document.createElement('canvas');
@@ -1040,7 +1018,6 @@
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#3e2723'; // Rich dark loam
         ctx.fillRect(0, 0, 256, 256);
-
         for (let i = 0; i < 3500; i++) {
           const x = Math.random() * 256;
           const y = Math.random() * 256;
@@ -1050,14 +1027,12 @@
         return new THREE.CanvasTexture(canvas);
       }
     };
-
     /* --------------------------------------------------------------------------
        4. THREE.JS SCENE, LIGHTS, RENDERER & CAMERA SETUP
        -------------------------------------------------------------------------- */
     let scene, camera, renderer, controls;
     let dirLight, hemiLight;
     let clock = new THREE.Clock();
-
     // Scene container references
     let yardGroundMesh, snowGroundMesh;
     let houseGroup, trailerGroup, snowDumpZoneGroup, fenceGroup;
@@ -1069,7 +1044,6 @@
     let activeToolAction = false;
     let activeToolUseTimer = 0;
     let toolContinuousTimer = 0;
-
     // Player Physics & Movement State
     const player = {
       position: new THREE.Vector3(0, 1.7, 8),
@@ -1082,7 +1056,6 @@
       isSprinting: false,
       footstepTimer: 0
     };
-
     function initThree() {
       const canvas = document.getElementById('game-canvas');
       
@@ -1090,11 +1063,9 @@
       scene = new THREE.Scene();
       scene.background = new THREE.Color('#d97706');
       scene.fog = new THREE.FogExp2('#d97706', 0.015);
-
       // Camera
       camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.1, 300);
       camera.position.copy(player.position);
-
       // Renderer (Optimized WebGL with soft shadows)
       renderer = new THREE.WebGLRenderer({
         canvas: canvas,
@@ -1108,14 +1079,11 @@
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.05;
       renderer.outputEncoding = THREE.sRGBEncoding;
-
       // Controls (PointerLockControls)
       controls = new THREE.PointerLockControls(camera, canvas);
-
       // Lighting Setup
       hemiLight = new THREE.HemisphereLight('#fef3c7', '#78350f', 0.6);
       scene.add(hemiLight);
-
       dirLight = new THREE.DirectionalLight('#ffedd5', 1.3);
       dirLight.position.set(30, 40, 20);
       dirLight.castShadow = true;
@@ -1129,22 +1097,18 @@
       dirLight.shadow.camera.bottom = -30;
       dirLight.shadow.bias = -0.0003;
       scene.add(dirLight);
-
       // Build World Objects
       buildEnvironment();
       setupFirstPersonTools();
-
       // Window resize handling
       window.addEventListener('resize', onWindowResize, false);
       setupInputListeners();
     }
-
     function onWindowResize() {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     }
-
     /* --------------------------------------------------------------------------
        5. SUBURBAN YARD ENVIRONMENT BUILDER
        -------------------------------------------------------------------------- */
@@ -1161,7 +1125,6 @@
       yardGroundMesh.position.set(0, 0, 1);
       yardGroundMesh.receiveShadow = true;
       scene.add(yardGroundMesh);
-
       // 2. Winter Snow Overlay Mesh (Hidden in autumn, summer, spring)
       const snowGeo = new THREE.PlaneGeometry(36, 32, 16, 16);
       const snowMat = new THREE.MeshStandardMaterial({
@@ -1175,7 +1138,6 @@
       snowGroundMesh.receiveShadow = true;
       snowGroundMesh.visible = false;
       scene.add(snowGroundMesh);
-
       // 3. Driveway (Asphalt) on West Side
       const driveGeo = new THREE.PlaneGeometry(7, 32);
       const driveMat = new THREE.MeshStandardMaterial({
@@ -1188,7 +1150,6 @@
       driveway.position.set(-13.5, 0.02, 1);
       driveway.receiveShadow = true;
       scene.add(driveway);
-
       // Driveway curbs
       const curbGeo = new THREE.BoxGeometry(0.3, 0.2, 32);
       const curbMat = new THREE.MeshStandardMaterial({ color: '#94a3b8', roughness: 0.8 });
@@ -1197,7 +1158,6 @@
       curb.castShadow = true;
       curb.receiveShadow = true;
       scene.add(curb);
-
       // 4. Stone Path to Front Porch
       const stoneGeo = new THREE.BoxGeometry(1.2, 0.06, 0.9);
       const stoneMat = new THREE.MeshStandardMaterial({ color: '#cbd5e1', roughness: 0.9 });
@@ -1208,13 +1168,11 @@
         stone.receiveShadow = true;
         scene.add(stone);
       }
-
       // 5. Suburban House Architecture
       houseGroup = new THREE.Group();
       
       const sidingTex = Textures.createSiding();
       const roofTex = Textures.createRoof();
-
       const mainHouseGeo = new THREE.BoxGeometry(16, 7.5, 9);
       const houseMat = new THREE.MeshStandardMaterial({ map: sidingTex, roughness: 0.8 });
       const mainHouse = new THREE.Mesh(mainHouseGeo, houseMat);
@@ -1222,7 +1180,6 @@
       mainHouse.castShadow = true;
       mainHouse.receiveShadow = true;
       houseGroup.add(mainHouse);
-
       // Roof (Gable Pitch)
       const roofGeo = new THREE.ConeGeometry(12, 3.5, 4);
       const roofMat = new THREE.MeshStandardMaterial({ map: roofTex, roughness: 0.75 });
@@ -1232,14 +1189,12 @@
       roof.scale.set(1.15, 1, 0.9);
       roof.castShadow = true;
       houseGroup.add(roof);
-
       // Garage Wing (next to driveway)
       const garageGeo = new THREE.BoxGeometry(7, 4.5, 7.5);
       const garage = new THREE.Mesh(garageGeo, houseMat);
       garage.position.set(-9.5, 2.25, -11.25);
       garage.castShadow = true;
       houseGroup.add(garage);
-
       // Garage Door
       const garageDoorGeo = new THREE.PlaneGeometry(5.5, 3.4);
       const garageDoorMat = new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.5 });
@@ -1247,7 +1202,6 @@
       garageDoor.position.set(-9.5, 1.7, -7.48);
       garageDoor.castShadow = true;
       houseGroup.add(garageDoor);
-
       // Front Porch
       const porchDeckGeo = new THREE.BoxGeometry(6.5, 0.4, 2.5);
       const porchDeckMat = new THREE.MeshStandardMaterial({ color: '#475569', roughness: 0.7 });
@@ -1255,7 +1209,6 @@
       porchDeck.position.set(1, 0.2, -6.5);
       porchDeck.receiveShadow = true;
       houseGroup.add(porchDeck);
-
       // Porch Columns
       const colGeo = new THREE.CylinderGeometry(0.12, 0.12, 2.8, 12);
       const colMat = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.4 });
@@ -1265,21 +1218,18 @@
         col.castShadow = true;
         houseGroup.add(col);
       }
-
       // Porch Roof
       const porchRoofGeo = new THREE.BoxGeometry(6.8, 0.35, 2.8);
       const porchRoof = new THREE.Mesh(porchRoofGeo, roofMat);
       porchRoof.position.set(1, 3.1, -6.6);
       porchRoof.castShadow = true;
       houseGroup.add(porchRoof);
-
       // Front Door
       const doorGeo = new THREE.PlaneGeometry(1.4, 2.6);
       const doorMat = new THREE.MeshStandardMaterial({ color: '#991b1b', roughness: 0.5 });
       const door = new THREE.Mesh(doorGeo, doorMat);
       door.position.set(1, 1.5, -7.48);
       houseGroup.add(door);
-
       // Windows
       const winGeo = new THREE.PlaneGeometry(1.6, 1.8);
       const winMat = new THREE.MeshStandardMaterial({ color: '#38bdf8', roughness: 0.1, metalness: 0.8 });
@@ -1292,9 +1242,7 @@
         win.position.set(...pos);
         houseGroup.add(win);
       });
-
       scene.add(houseGroup);
-
       // 6. Perimeter Wooden Fence
       fenceGroup = new THREE.Group();
       const woodTex = Textures.createWood();
@@ -1302,24 +1250,20 @@
       const railGeo = new THREE.BoxGeometry(2.5, 0.1, 0.08);
       const slatGeo = new THREE.BoxGeometry(0.16, 1.4, 0.03);
       const fenceMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85 });
-
       // Build South Fence (along front yard road)
       for (let x = -9.5; x <= 16.5; x += 2.5) {
         const post = new THREE.Mesh(postGeo, fenceMat);
         post.position.set(x, 0.8, 15);
         post.castShadow = true;
         fenceGroup.add(post);
-
         if (x < 16.5) {
           const rail1 = new THREE.Mesh(railGeo, fenceMat);
           rail1.position.set(x + 1.25, 1.2, 15);
           rail1.castShadow = true;
           fenceGroup.add(rail1);
-
           const rail2 = new THREE.Mesh(railGeo, fenceMat);
           rail2.position.set(x + 1.25, 0.4, 15);
           fenceGroup.add(rail2);
-
           for (let s = 0.2; s < 2.5; s += 0.25) {
             const slat = new THREE.Mesh(slatGeo, fenceMat);
             slat.position.set(x + s, 0.75, 15.04);
@@ -1328,14 +1272,12 @@
           }
         }
       }
-
       // Build East Fence (property line)
       for (let z = -6.5; z <= 15; z += 2.5) {
         const post = new THREE.Mesh(postGeo, fenceMat);
         post.position.set(16.5, 0.8, z);
         post.castShadow = true;
         fenceGroup.add(post);
-
         if (z < 15) {
           const sideRail = new THREE.Mesh(railGeo, fenceMat);
           sideRail.rotation.y = Math.PI / 2;
@@ -1343,57 +1285,46 @@
           fenceGroup.add(sideRail);
         }
       }
-
       scene.add(fenceGroup);
-
       // 7. Central Utility Trailer (On Driveway for Debris Dumping)
       trailerGroup = new THREE.Group();
       
       const trailerMetalMat = new THREE.MeshStandardMaterial({ color: '#1e293b', roughness: 0.5, metalness: 0.7 });
       const trailerWoodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.9 });
-
       const trailerBed = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.2, 5.0), trailerMetalMat);
       trailerBed.position.set(0, 0.7, 0);
       trailerBed.castShadow = true;
       trailerGroup.add(trailerBed);
-
       const sideWallLeft = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 5.0), trailerWoodMat);
       sideWallLeft.position.set(-1.45, 1.1, 0);
       sideWallLeft.castShadow = true;
       trailerGroup.add(sideWallLeft);
-
       const sideWallRight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 5.0), trailerWoodMat);
       sideWallRight.position.set(1.45, 1.1, 0);
       sideWallRight.castShadow = true;
       trailerGroup.add(sideWallRight);
-
       const frontWall = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.8, 0.1), trailerWoodMat);
       frontWall.position.set(0, 1.1, -2.45);
       frontWall.castShadow = true;
       trailerGroup.add(frontWall);
-
       // Wheels
       const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 16);
       const wheelMat = new THREE.MeshStandardMaterial({ color: '#0f172a', roughness: 0.9 });
       wheelGeo.rotateZ(Math.PI / 2);
-
       const wheelLeft = new THREE.Mesh(wheelGeo, wheelMat);
       wheelLeft.position.set(-1.6, 0.45, 0.4);
       wheelLeft.castShadow = true;
       trailerGroup.add(wheelLeft);
-
       const wheelRight = new THREE.Mesh(wheelGeo, wheelMat);
       wheelRight.position.set(1.6, 0.45, 0.4);
       wheelRight.castShadow = true;
       trailerGroup.add(wheelRight);
-
       // Drop ramp / mesh gate
       const rampGeo = new THREE.BoxGeometry(2.9, 0.08, 1.6);
       const ramp = new THREE.Mesh(rampGeo, trailerMetalMat);
       ramp.position.set(0, 0.35, 3.2);
       ramp.rotation.x = 0.35;
       trailerGroup.add(ramp);
-
       // Glowing Holographic Beacon Ring around Trailer Drop Zone
       const beaconGeo = new THREE.RingGeometry(2.8, 3.2, 32);
       const beaconMat = new THREE.MeshBasicMaterial({
@@ -1407,15 +1338,12 @@
       beacon.position.set(0, 0.05, 1.5);
       beacon.name = 'beaconRing';
       trailerGroup.add(beacon);
-
       trailerGroup.position.set(-13.5, 0, 1);
       scene.add(trailerGroup);
-
       // 8. Winter Snow Dump Zone (Yard Boundary Marker)
       snowDumpZoneGroup = new THREE.Group();
       const stakeGeo = new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8);
       const stakeMat = new THREE.MeshStandardMaterial({ color: '#ea580c', roughness: 0.5 }); // Orange safety stake
-
       const stakeCoords = [
         [11.5, 8.5], [15.5, 8.5],
         [11.5, 13.5], [15.5, 13.5]
@@ -1426,7 +1354,6 @@
         stake.castShadow = true;
         snowDumpZoneGroup.add(stake);
       });
-
       // Growing Snow Mound Mesh inside Dump Zone
       const moundGeo = new THREE.SphereGeometry(1.8, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
       const moundMat = new THREE.MeshStandardMaterial({ color: '#f1f5f9', roughness: 0.3 });
@@ -1436,7 +1363,6 @@
       snowMound.scale.set(1, 0.25, 1);
       snowMound.receiveShadow = true;
       snowDumpZoneGroup.add(snowMound);
-
       // Glowing marker ring for snow zone
       const snowRing = new THREE.Mesh(
         new THREE.RingGeometry(2.2, 2.6, 24),
@@ -1445,9 +1371,7 @@
       snowRing.rotation.x = -Math.PI / 2;
       snowRing.position.set(13.5, 0.05, 11);
       snowDumpZoneGroup.add(snowRing);
-
       scene.add(snowDumpZoneGroup);
-
       // 9. Yard Trees (Mature shade trees that change foliage every season)
       const treePositions = [
         [-4, 5],
@@ -1455,19 +1379,16 @@
         [12, 5],
         [-5, -4]
       ];
-
       treePositions.forEach(([tx, tz], index) => {
         const tree = createTree(tx, tz, index);
         treeGroups.push(tree);
         scene.add(tree);
       });
     }
-
     // Dynamic Tree Builder with seasonal foliage
     function createTree(x, z, idx) {
       const tree = new THREE.Group();
       tree.position.set(x, 0, z);
-
       // Trunk
       const trunkGeo = new THREE.CylinderGeometry(0.35, 0.5, 4.2, 10);
       const trunkMat = new THREE.MeshStandardMaterial({
@@ -1479,23 +1400,19 @@
       trunk.castShadow = true;
       trunk.receiveShadow = true;
       tree.add(trunk);
-
       // Foliage Clumps
       const foliageGroup = new THREE.Group();
       foliageGroup.name = 'foliageGroup';
-
       const foliageMat = new THREE.MeshStandardMaterial({
         color: '#d97706',
         roughness: 0.8
       });
-
       const clusterOffsets = [
         [0, 4.5, 0, 2.2],
         [-0.8, 4.0, 0.7, 1.6],
         [0.9, 3.8, -0.6, 1.8],
         [0, 5.6, 0, 1.5]
       ];
-
       clusterOffsets.forEach(([cx, cy, cz, rad]) => {
         const clump = new THREE.Mesh(new THREE.DodecahedronGeometry(rad, 1), foliageMat);
         clump.position.set(cx, cy, cz);
@@ -1503,7 +1420,6 @@
         clump.receiveShadow = true;
         foliageGroup.add(clump);
       });
-
       // Snow Cap Clump for Winter
       const snowCapMat = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.5 });
       const snowCap = new THREE.Mesh(new THREE.DodecahedronGeometry(2.3, 1), snowCapMat);
@@ -1512,11 +1428,9 @@
       snowCap.visible = false;
       snowCap.castShadow = true;
       tree.add(snowCap);
-
       tree.add(foliageGroup);
       return tree;
     }
-
     /* --------------------------------------------------------------------------
        6. FIRST-PERSON HELD 3D TOOLS (VIEW-MODEL WITH BOBBING & ANIMATIONS)
        -------------------------------------------------------------------------- */
@@ -1524,9 +1438,7 @@
       toolGroup = new THREE.Group();
       camera.add(toolGroup);
       scene.add(camera);
-
       toolGroup.position.set(0.3, -0.28, -0.55);
-
       // Tool 0: Leaf Blower
       const blowerModel = new THREE.Group();
       const blowerBody = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 0.35), new THREE.MeshStandardMaterial({ color: '#ea580c', roughness: 0.4 }));
@@ -1543,7 +1455,6 @@
       blowerModel.rotation.set(0.1, -0.15, 0);
       toolGroup.add(blowerModel);
       heldToolModels.push(blowerModel);
-
       // Tool 1: Snow Shovel
       const shovelModel = new THREE.Group();
       const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 8), new THREE.MeshStandardMaterial({ color: '#94a3b8', metalness: 0.6 }));
@@ -1557,7 +1468,6 @@
       shovelModel.visible = false;
       toolGroup.add(shovelModel);
       heldToolModels.push(shovelModel);
-
       // Tool 2: Lawn Mower Handle View
       const mowerModel = new THREE.Group();
       const mLeftHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 8), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
@@ -1565,20 +1475,17 @@
       mLeftHandle.rotation.x = 0.6;
       mLeftHandle.rotation.z = -0.15;
       mowerModel.add(mLeftHandle);
-
       const mRightHandle = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 8), new THREE.MeshStandardMaterial({ color: '#0f172a' }));
       mRightHandle.position.set(0.25, -0.05, -0.3);
       mRightHandle.rotation.x = 0.6;
       mRightHandle.rotation.z = 0.15;
       mowerModel.add(mRightHandle);
-
       const mowerDeck = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.15, 0.5), new THREE.MeshStandardMaterial({ color: '#dc2626', roughness: 0.3 }));
       mowerDeck.position.set(0, -0.4, -0.7);
       mowerModel.add(mowerDeck);
       mowerModel.visible = false;
       toolGroup.add(mowerModel);
       heldToolModels.push(mowerModel);
-
       // Tool 3: Grass Seed Spreader Hopper
       const seedModel = new THREE.Group();
       const hopper = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.25, 12), new THREE.MeshStandardMaterial({ color: '#16a34a', roughness: 0.5 }));
@@ -1592,7 +1499,6 @@
       seedModel.visible = false;
       toolGroup.add(seedModel);
       heldToolModels.push(seedModel);
-
       // Tool 4: Watering Can
       const waterModel = new THREE.Group();
       const canBody = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.28, 12), new THREE.MeshStandardMaterial({ color: '#059669', roughness: 0.4 }));
@@ -1609,16 +1515,13 @@
       toolGroup.add(waterModel);
       heldToolModels.push(waterModel);
     }
-
     // Switch active tool model and UI slot
     function selectTool(index) {
       if (index < 0 || index >= heldToolModels.length) return;
       STATE.equippedTool = index;
-
       heldToolModels.forEach((model, idx) => {
         model.visible = (idx === index);
       });
-
       document.querySelectorAll('.tool-slot').forEach(slot => {
         const slotIdx = parseInt(slot.dataset.toolIndex);
         if (slotIdx === index) {
@@ -1628,7 +1531,6 @@
         }
       });
     }
-
     /* --------------------------------------------------------------------------
        7. SEASONAL CYCLE, ROUND SYSTEM & DEBRIS GENERATION
        -------------------------------------------------------------------------- */
@@ -1639,9 +1541,7 @@
         }
       });
       debrisInstances = [];
-
       applySeasonAtmosphere();
-
       if (STATE.season === 'AUTUMN') {
         setupAutumnLeafRound();
       } else if (STATE.season === 'WINTER') {
@@ -1651,10 +1551,8 @@
       } else if (STATE.season === 'SUMMER') {
         setupSummerMowingRound();
       }
-
       updateHUD();
     }
-
     function applySeasonAtmosphere() {
       const s = STATE.season;
       if (s === 'AUTUMN') {
@@ -1668,7 +1566,6 @@
         yardGroundMesh.material.map = Textures.createGrass('AUTUMN');
         yardGroundMesh.material.needsUpdate = true;
         snowGroundMesh.visible = false;
-
         treeGroups.forEach(tree => {
           const cap = tree.getObjectByName('snowCap');
           if (cap) cap.visible = false;
@@ -1687,7 +1584,6 @@
         hemiLight.color.set('#e2e8f0');
         hemiLight.groundColor.set('#64748b');
         snowGroundMesh.visible = true;
-
         treeGroups.forEach(tree => {
           const cap = tree.getObjectByName('snowCap');
           if (cap) cap.visible = true;
@@ -1705,7 +1601,6 @@
         yardGroundMesh.material.map = Textures.createGrass('SPRING');
         yardGroundMesh.material.needsUpdate = true;
         snowGroundMesh.visible = false;
-
         treeGroups.forEach(tree => {
           const cap = tree.getObjectByName('snowCap');
           if (cap) cap.visible = false;
@@ -1726,7 +1621,6 @@
         yardGroundMesh.material.map = Textures.createGrass('SUMMER');
         yardGroundMesh.material.needsUpdate = true;
         snowGroundMesh.visible = false;
-
         treeGroups.forEach(tree => {
           const cap = tree.getObjectByName('snowCap');
           if (cap) cap.visible = false;
@@ -1738,18 +1632,15 @@
         });
       }
     }
-
     // AUTUMN: Leaf Piles Spawner (3 Rounds)
     function setupAutumnLeafRound() {
       selectTool(0);
       const leafCount = 35 + STATE.round * 15;
       const leafColors = ['#dc2626', '#d97706', '#ca8a04', '#9a3412', '#78350f'];
       const leafGeo = new THREE.DodecahedronGeometry(0.35, 0);
-
       for (let i = 0; i < leafCount; i++) {
         const x = -8 + Math.random() * 23;
         const z = -4 + Math.random() * 17;
-
         const col = leafColors[Math.floor(Math.random() * leafColors.length)];
         const leafMat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.8 });
         const mesh = new THREE.Mesh(leafGeo, leafMat);
@@ -1758,7 +1649,6 @@
         mesh.scale.set(1.2 + Math.random() * 0.8, 0.5, 1.2 + Math.random() * 0.8);
         mesh.castShadow = true;
         scene.add(mesh);
-
         debrisInstances.push({
           type: 'LEAF',
           mesh: mesh,
@@ -1768,61 +1658,50 @@
       }
       showToast(`🍂 Autumn Shift ${STATE.round}/3: Clear ${leafCount} leaf piles with your blower and dump at the trailer!`);
     }
-
     // WINTER: Snow Chunks Spawner & Penalty Countdown Timer (5 Rounds)
     function setupWinterSnowRound() {
       selectTool(1);
       const snowCount = 45 + STATE.round * 10;
       const snowGeo = new THREE.BoxGeometry(1.4, 0.25, 1.4);
       const snowMat = new THREE.MeshStandardMaterial({ color: '#f8fafc', roughness: 0.4 });
-
       for (let i = 0; i < snowCount; i++) {
         const x = -8 + Math.random() * 23;
         const z = -4 + Math.random() * 17;
-
         const mesh = new THREE.Mesh(snowGeo, snowMat);
         mesh.position.set(x, 0.12, z);
         mesh.rotation.y = Math.random() * Math.PI;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         scene.add(mesh);
-
         debrisInstances.push({
           type: 'SNOW',
           mesh: mesh,
           cleared: false
         });
       }
-
       STATE.winterTimerMax = 95 - STATE.round * 7;
       STATE.winterTimer = STATE.winterTimerMax;
       STATE.winterTimerActive = true;
-
       document.getElementById('winter-timer-container').classList.remove('hidden');
       showToast(`❄️ Winter Shift ${STATE.round}/5: Shovel snow and pile it at the boundary marker before the freeze timer expires!`);
     }
-
     // SPRING: Bare Soil Patches & Seeding/Watering Round (1 Round)
     function setupSpringLawnCare() {
       selectTool(3);
       document.getElementById('winter-timer-container').classList.add('hidden');
       STATE.winterTimerActive = false;
-
       const totalBare = STATE.barePatchesCount + STATE.winterRottedPatches;
       const patchGeo = new THREE.CircleGeometry(1.2, 16);
       const soilTex = Textures.createSoil();
       const patchMat = new THREE.MeshStandardMaterial({ map: soilTex, roughness: 0.95 });
-
       for (let i = 0; i < totalBare; i++) {
         const x = -7 + Math.random() * 21;
         const z = -3 + Math.random() * 15;
-
         const mesh = new THREE.Mesh(patchGeo, patchMat.clone());
         mesh.rotation.x = -Math.PI / 2;
         mesh.position.set(x, 0.03, z);
         mesh.receiveShadow = true;
         scene.add(mesh);
-
         debrisInstances.push({
           type: 'SOIL_PATCH',
           mesh: mesh,
@@ -1830,35 +1709,29 @@
           seedCost: STATE.seedCostPerPatch
         });
       }
-
       const totalCostNeeded = totalBare * STATE.seedCostPerPatch;
       if (STATE.money < totalCostNeeded) {
         setTimeout(() => {
           openBankModal(true);
         }, 1200);
       }
-
       showToast(`🌱 Spring Shift: Winter frost left ${totalBare} bare mud patches! Sow grass seeds [4] then water them [5]!`);
     }
-
     // SUMMER: Tall Grass Mowing Spawner (3 Rounds)
     function setupSummerMowingRound() {
       selectTool(2);
       const grassClumpCount = 50 + STATE.round * 15;
       const grassGeo = new THREE.ConeGeometry(0.7, 0.6, 6);
       const tallGrassMat = new THREE.MeshStandardMaterial({ color: '#4ade80', roughness: 0.7 });
-
       for (let i = 0; i < grassClumpCount; i++) {
         const x = -8 + Math.random() * 23;
         const z = -4 + Math.random() * 17;
-
         const mesh = new THREE.Mesh(grassGeo, tallGrassMat);
         mesh.position.set(x, 0.3, z);
         mesh.rotation.y = Math.random() * Math.PI;
         mesh.scale.set(1.2, 1.4, 1.2);
         mesh.castShadow = true;
         scene.add(mesh);
-
         debrisInstances.push({
           type: 'TALL_GRASS',
           mesh: mesh,
@@ -1868,21 +1741,17 @@
       }
       showToast(`☀️ Summer Shift ${STATE.round}/3: Fire up the mower [3], trim the tall lawn, and sell clippings at the trailer!`);
     }
-
     /* --------------------------------------------------------------------------
        8. TOOL ACTIONS & INTERACTION LOGIC
        -------------------------------------------------------------------------- */
     function useActiveTool() {
       if (!STATE.isGameActive || STATE.isPaused) return;
-
       const toolIdx = STATE.equippedTool;
       activeToolAction = true;
       activeToolUseTimer = 0.3;
-
       if (toolIdx === 0) {
         sound.startBlower();
         const blastRange = 4.2 + (STATE.upgrades.blowerTier - 1) * 2.0;
-
         debrisInstances.forEach(item => {
           if (item.type === 'LEAF' && !item.cleared) {
             const dist = camera.position.distanceTo(item.mesh.position);
@@ -1906,7 +1775,6 @@
       } else if (toolIdx === 1) {
         sound.playShovelScrape();
         const shovelRange = 3.6 + (STATE.upgrades.shovelTier - 1) * 1.5;
-
         debrisInstances.forEach(item => {
           if (item.type === 'SNOW' && !item.cleared) {
             const dist = camera.position.distanceTo(item.mesh.position);
@@ -1930,7 +1798,6 @@
       } else if (toolIdx === 2) {
         sound.startMower();
         const mowerRange = 3.8 + (STATE.upgrades.mowerTier - 1) * 1.2;
-
         debrisInstances.forEach(item => {
           if (item.type === 'TALL_GRASS' && !item.cleared) {
             const dist = camera.position.distanceTo(item.mesh.position);
@@ -1986,17 +1853,14 @@
           }
         });
       }
-
       checkRoundCompletion();
     }
-
     function stopActiveTool() {
       activeToolAction = false;
       sound.stopBlower();
       sound.stopMower();
       sound.stopWatering();
     }
-
     function handleContextInteraction() {
       // 1. Trailer Dumping Check
       const distToTrailer = camera.position.distanceTo(trailerGroup.position);
@@ -2005,13 +1869,11 @@
           if (STATE.season === 'AUTUMN') {
             let grossEarnings = STATE.bagItems * 1.50;
             let debtPaid = 0;
-
             if (STATE.debt > 0) {
               debtPaid = Math.min(STATE.debt, grossEarnings * 0.5);
               STATE.debt -= debtPaid;
               grossEarnings -= debtPaid;
             }
-
             STATE.money += grossEarnings;
             sound.playCash();
             showToast(`💰 Sold leaves for +$${grossEarnings.toFixed(2)}!` + (debtPaid > 0 ? ` ($${debtPaid.toFixed(2)} auto-paid to debt)` : ''));
@@ -2022,13 +1884,11 @@
           } else if (STATE.season === 'SUMMER') {
             let grossEarnings = STATE.bagItems * 1.25;
             let debtPaid = 0;
-
             if (STATE.debt > 0) {
               debtPaid = Math.min(STATE.debt, grossEarnings * 0.5);
               STATE.debt -= debtPaid;
               grossEarnings -= debtPaid;
             }
-
             STATE.money += grossEarnings;
             sound.playCash();
             showToast(`💰 Sold grass clippings for +$${grossEarnings.toFixed(2)}!` + (debtPaid > 0 ? ` ($${debtPaid.toFixed(2)} auto-paid to debt)` : ''));
@@ -2041,7 +1901,6 @@
           showToast("🎒 Your bag is empty! Gather debris first.");
         }
       }
-
       // 2. Winter Snow Dump Zone Check
       const snowZonePos = new THREE.Vector3(13.5, 0, 11);
       const distToSnowZone = camera.position.distanceTo(snowZonePos);
@@ -2050,7 +1909,6 @@
           sound.playShovelScrape();
           showToast(`❄️ Deposited ${STATE.bagItems} snow scoops at the boundary pile!`);
           STATE.bagItems = 0;
-
           const mound = snowDumpZoneGroup.getObjectByName('snowMound');
           if (mound) {
             mound.scale.y = Math.min(mound.scale.y + 0.15, 2.8);
@@ -2065,10 +1923,8 @@
         }
       }
     }
-
     function checkRoundCompletion() {
       let isCompleted = false;
-
       if (STATE.season === 'AUTUMN') {
         const remaining = debrisInstances.filter(i => i.type === 'LEAF' && !i.cleared).length;
         if (remaining === 0 && STATE.bagItems === 0) {
@@ -2090,19 +1946,15 @@
           isCompleted = true;
         }
       }
-
       if (isCompleted) {
         completeCurrentRound();
       }
     }
-
     function completeCurrentRound() {
       sound.playRoundWin();
       stopActiveTool();
-
       const bonus = (STATE.season === 'WINTER') ? 0 : 50.00;
       STATE.money += bonus;
-
       if (STATE.season === 'AUTUMN') {
         if (STATE.round < 3) {
           STATE.round++;
@@ -2146,7 +1998,6 @@
         }
       }
     }
-
     /* --------------------------------------------------------------------------
        9. INPUT CONTROLS & LISTENERS
        -------------------------------------------------------------------------- */
@@ -2159,16 +2010,13 @@
         document.getElementById('modal-bank').classList.add('hidden');
         sound.init();
       });
-
       controls.addEventListener('unlock', () => {
         if (STATE.isGameActive && !isAnyModalOpen()) {
           openPauseModal();
         }
       });
-
       document.addEventListener('keydown', (e) => {
         if (!STATE.isGameActive) return;
-
         switch (e.code) {
           case 'KeyW': player.moveForward = true; break;
           case 'KeyS': player.moveBackward = true; break;
@@ -2188,7 +2036,6 @@
           case 'KeyM': toggleBankModal(); break;
         }
       });
-
       document.addEventListener('keyup', (e) => {
         switch (e.code) {
           case 'KeyW': player.moveForward = false; break;
@@ -2201,19 +2048,16 @@
             break;
         }
       });
-
       document.addEventListener('mousedown', (e) => {
         if (controls.isLocked && e.button === 0) {
           useActiveTool();
         }
       });
-
       document.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
           stopActiveTool();
         }
       });
-
       document.addEventListener('wheel', (e) => {
         if (!controls.isLocked) return;
         if (e.deltaY > 0) {
@@ -2222,46 +2066,38 @@
           selectTool((STATE.equippedTool + 4) % 5);
         }
       });
-
       document.querySelectorAll('.tool-slot').forEach(slot => {
         slot.addEventListener('click', () => {
           selectTool(parseInt(slot.dataset.toolIndex));
         });
       });
-
       document.getElementById('btn-start-game').addEventListener('click', () => {
         STATE.isGameActive = true;
         sound.init();
         controls.lock();
         startCurrentSeasonRound();
       });
-
       document.getElementById('btn-resume-game').addEventListener('click', () => {
         controls.lock();
       });
-
       document.getElementById('btn-open-shop').addEventListener('click', toggleShopModal);
       document.getElementById('btn-pause-shop').addEventListener('click', toggleShopModal);
       document.getElementById('btn-close-shop').addEventListener('click', toggleShopModal);
       document.getElementById('btn-shop-done').addEventListener('click', toggleShopModal);
-
       document.getElementById('btn-open-bank').addEventListener('click', toggleBankModal);
       document.getElementById('btn-pause-bank').addEventListener('click', toggleBankModal);
       document.getElementById('btn-close-bank').addEventListener('click', toggleBankModal);
       document.getElementById('btn-bank-done').addEventListener('click', toggleBankModal);
-
       document.getElementById('btn-continue-season').addEventListener('click', () => {
         document.getElementById('modal-season').classList.add('hidden');
         controls.lock();
         startCurrentSeasonRound();
       });
-
       document.getElementById('btn-toggle-sound').addEventListener('click', () => {
         STATE.soundEnabled = !STATE.soundEnabled;
         document.getElementById('sound-status').textContent = STATE.soundEnabled ? 'ON' : 'OFF';
         document.getElementById('sound-status').className = STATE.soundEnabled ? 'text-emerald-400 font-bold' : 'text-slate-400 font-bold';
       });
-
       document.getElementById('btn-pay-debt').addEventListener('click', () => {
         if (STATE.money >= 50 && STATE.debt > 0) {
           const payAmt = Math.min(50, STATE.debt);
@@ -2276,13 +2112,11 @@
         }
       });
     }
-
     function isAnyModalOpen() {
       return !document.getElementById('modal-shop').classList.contains('hidden') ||
              !document.getElementById('modal-bank').classList.contains('hidden') ||
              !document.getElementById('modal-season').classList.contains('hidden');
     }
-
     /* --------------------------------------------------------------------------
        10. SHOP & UPGRADES SYSTEM
        -------------------------------------------------------------------------- */
@@ -2342,7 +2176,6 @@
         apply: () => { STATE.moveSpeed = 8.5; STATE.upgrades.bootsTier = 2; }
       }
     ];
-
     function toggleShopModal() {
       const modal = document.getElementById('modal-shop');
       if (modal.classList.contains('hidden')) {
@@ -2354,16 +2187,13 @@
         if (STATE.isGameActive) controls.lock();
       }
     }
-
     function renderShopItems() {
       const container = document.getElementById('shop-items-container');
       document.getElementById('shop-balance-display').textContent = `$${STATE.money.toFixed(2)}`;
       container.innerHTML = '';
-
       SHOP_CATALOG.forEach(item => {
         const isOwned = (STATE.upgrades[item.cat + 'Tier'] >= item.tier) || (item.cat === 'bag' && STATE.bagCapacity >= (item.tier === 2 ? 50 : 120));
         const canAfford = STATE.money >= item.price;
-
         const row = document.createElement('div');
         row.className = 'bg-slate-900/80 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3';
         row.innerHTML = `
@@ -2384,7 +2214,6 @@
         container.appendChild(row);
       });
     }
-
     window.buyShopItem = function(id) {
       const item = SHOP_CATALOG.find(i => i.id === id);
       if (item && STATE.money >= item.price) {
@@ -2396,7 +2225,6 @@
         updateHUD();
       }
     };
-
     /* --------------------------------------------------------------------------
        11. BANK & LOAN CREDIT SYSTEM
        -------------------------------------------------------------------------- */
@@ -2409,19 +2237,16 @@
         if (STATE.isGameActive) controls.lock();
       }
     }
-
     function openBankModal(autoTriggered = false) {
       controls.unlock();
       const modal = document.getElementById('modal-bank');
       document.getElementById('bank-debt-amount').textContent = `$${STATE.debt.toFixed(2)}`;
       document.getElementById('btn-pay-debt').disabled = (STATE.debt <= 0 || STATE.money < 50);
       modal.classList.remove('hidden');
-
       if (autoTriggered) {
         showToast("⚠️ Spring Notice: Bank financing opened to fund grass seeds!", "warning");
       }
     }
-
     window.takeLoan = function(amount, repayAmount) {
       STATE.money += amount;
       STATE.debt += repayAmount;
@@ -2431,11 +2256,9 @@
       updateHUD();
       if (STATE.isGameActive) controls.lock();
     };
-
     function openPauseModal() {
       document.getElementById('modal-pause').classList.remove('hidden');
     }
-
     function showSeasonSplash(title, desc, bonus = 0) {
       controls.unlock();
       const modal = document.getElementById('modal-season');
@@ -2444,16 +2267,13 @@
       document.getElementById('stat-bonus').textContent = `+$${bonus.toFixed(2)}`;
       document.getElementById('stat-money').textContent = `$${STATE.money.toFixed(2)}`;
       document.getElementById('stat-health').textContent = (STATE.winterRottedPatches === 0) ? '100% Perfect Turf' : `${Math.max(40, 100 - STATE.winterRottedPatches * 10)}% (Frost Wear)`;
-
       const icon = document.getElementById('season-splash-icon');
       if (STATE.season === 'AUTUMN') icon.textContent = '🍂';
       else if (STATE.season === 'WINTER') icon.textContent = '❄️';
       else if (STATE.season === 'SPRING') icon.textContent = '🌱';
       else icon.textContent = '☀️';
-
       modal.classList.remove('hidden');
     }
-
     /* --------------------------------------------------------------------------
        12. HUD & NOTIFICATION TOASTS
        -------------------------------------------------------------------------- */
@@ -2467,13 +2287,11 @@
         'SPRING': { text: 'Spring Seeding', icon: '🌱', col: 'text-emerald-400', badgeCol: 'bg-emerald-600/80 text-emerald-100' },
         'SUMMER': { text: 'Summer Mowing', icon: '☀️', col: 'text-yellow-400', badgeCol: 'bg-yellow-600/80 text-yellow-100' }
       };
-
       const cur = seasonNames[STATE.season];
       titleEl.textContent = cur.text;
       titleEl.className = `font-bold text-lg tracking-wide uppercase ${cur.col}`;
       badgeEl.textContent = cur.icon;
       roundEl.textContent = `Round ${STATE.round}/${STATE.maxRounds}`;
-
       let total = debrisInstances.length || 1;
       let completed = 0;
       if (STATE.season === 'SPRING') {
@@ -2484,7 +2302,6 @@
       const pct = Math.min(100, Math.floor((completed / total) * 100));
       document.getElementById('round-progress-bar').style.width = `${pct}%`;
       document.getElementById('round-progress-text').textContent = `${completed} / ${total}`;
-
       document.getElementById('money-display').textContent = `$${STATE.money.toFixed(2)}`;
       const debtBox = document.getElementById('debt-container');
       if (STATE.debt > 0) {
@@ -2493,13 +2310,11 @@
       } else {
         debtBox.classList.add('hidden');
       }
-
       document.getElementById('bag-name').textContent = STATE.bagName;
       document.getElementById('bag-capacity-text').textContent = `${STATE.bagItems} / ${STATE.bagCapacity}`;
       const bagPct = Math.min(100, (STATE.bagItems / STATE.bagCapacity) * 100);
       const bagBar = document.getElementById('bag-capacity-bar');
       bagBar.style.width = `${bagPct}%`;
-
       const warningText = document.getElementById('bag-warning-text');
       if (STATE.bagItems >= STATE.bagCapacity) {
         warningText.classList.remove('hidden');
@@ -2508,18 +2323,14 @@
         warningText.classList.add('hidden');
         bagBar.className = "h-full bg-gradient-to-r from-sky-500 to-indigo-500 rounded-full transition-all duration-200";
       }
-
       checkContextPrompt();
     }
-
     function checkContextPrompt() {
       const container = document.getElementById('interaction-prompt-container');
       const promptText = document.getElementById('prompt-text');
       const crosshair = document.getElementById('crosshair');
-
       let show = false;
       let msg = "";
-
       const distToTrailer = camera.position.distanceTo(trailerGroup.position);
       if (distToTrailer < 4.5 && (STATE.season === 'AUTUMN' || STATE.season === 'SUMMER')) {
         show = true;
@@ -2527,7 +2338,6 @@
           ? `Dump Bag into Trailer & Collect Cash (+~$${(STATE.bagItems * (STATE.season === 'AUTUMN' ? 1.5 : 1.25)).toFixed(2)})`
           : `Trailer Debris Station (Bag is empty)`;
       }
-
       const snowZonePos = new THREE.Vector3(13.5, 0, 11);
       const distToSnowZone = camera.position.distanceTo(snowZonePos);
       if (distToSnowZone < 4.5 && STATE.season === 'WINTER') {
@@ -2536,7 +2346,6 @@
           ? `Deposit Snow into Yard Boundary Pile [E]`
           : `Snow Repository Marker (Bag is empty)`;
       }
-
       if (show) {
         promptText.textContent = msg;
         container.style.opacity = '1';
@@ -2546,7 +2355,6 @@
         crosshair.classList.remove('hovered');
       }
     }
-
     function showToast(message, type = 'info') {
       const container = document.getElementById('toast-container');
       const toast = document.createElement('div');
@@ -2555,26 +2363,21 @@
       }`;
       toast.innerHTML = message;
       container.appendChild(toast);
-
       requestAnimationFrame(() => {
         toast.classList.remove('-translate-y-2', 'opacity-0');
       });
-
       setTimeout(() => {
         toast.classList.add('opacity-0', '-translate-y-2');
         setTimeout(() => toast.remove(), 350);
       }, 3600);
     }
-
     /* --------------------------------------------------------------------------
        13. MAIN 60 FPS ANIMATION & PHYSICS LOOP
        -------------------------------------------------------------------------- */
     function animate() {
       requestAnimationFrame(animate);
-
       const delta = Math.min(clock.getDelta(), 0.1);
       const time = clock.getElapsedTime();
-
       // Winter Timer Countdown & Frost Rot Penalty logic
       if (STATE.winterTimerActive && controls.isLocked) {
         STATE.winterTimer -= delta;
@@ -2583,65 +2386,52 @@
         const mins = Math.floor(secs / 60);
         const remSecs = secs % 60;
         timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${remSecs.toString().padStart(2, '0')}`;
-
         if (secs <= 20) {
           timerDisplay.className = "font-mono text-base font-black text-rose-500 danger-pulse";
         } else {
           timerDisplay.className = "font-mono text-base font-black text-emerald-400";
         }
-
         if (STATE.winterTimer <= 0) {
           STATE.winterTimerActive = false;
           sound.playWarning();
           const unclearedSnow = debrisInstances.filter(i => i.type === 'SNOW' && !i.cleared).length;
           const penaltyPatches = Math.max(2, Math.floor(unclearedSnow * 0.3));
           STATE.winterRottedPatches += penaltyPatches;
-
           showToast(`⚠️ TIME EXPIRED! Frost rotted your lawn roots! +${penaltyPatches} bare soil patches will appear in Spring!`, 'warning');
           
           completeCurrentRound();
         }
       }
-
       // Player Movement Physics
       if (controls.isLocked) {
         player.velocity.x -= player.velocity.x * 10.0 * delta;
         player.velocity.z -= player.velocity.z * 10.0 * delta;
-
         const currentSpeed = player.isSprinting ? STATE.moveSpeed * STATE.sprintMultiplier : STATE.moveSpeed;
-
         const moveDir = new THREE.Vector3();
         if (player.moveForward) moveDir.z += 1;
         if (player.moveBackward) moveDir.z -= 1;
         if (player.moveLeft) moveDir.x -= 1;
         if (player.moveRight) moveDir.x += 1;
         moveDir.normalize();
-
         const camDirection = new THREE.Vector3();
         camera.getWorldDirection(camDirection);
         camDirection.y = 0;
         camDirection.normalize();
-
         const camSide = new THREE.Vector3().crossVectors(camera.up, camDirection).normalize();
-
         if (player.moveForward) player.velocity.addScaledVector(camDirection, currentSpeed * 10.0 * delta);
         if (player.moveBackward) player.velocity.addScaledVector(camDirection, -currentSpeed * 10.0 * delta);
         if (player.moveLeft) player.velocity.addScaledVector(camSide, currentSpeed * 10.0 * delta);
         if (player.moveRight) player.velocity.addScaledVector(camSide, -currentSpeed * 10.0 * delta);
-
         // Apply movement
         camera.position.x += player.velocity.x * delta;
         camera.position.z += player.velocity.z * delta;
-
         // Collision bounds (Keep inside suburban property, avoid walking into house or fences)
         camera.position.x = Math.max(-16.0, Math.min(16.0, camera.position.x));
         camera.position.z = Math.max(-13.0, Math.min(14.5, camera.position.z));
-
         // House bounding collision
         if (camera.position.z < -6.5 && camera.position.x > -10.5 && camera.position.x < 11.0) {
           camera.position.z = -6.5;
         }
-
         // Footsteps Audio & Head Bobbing
         const isMoving = player.moveForward || player.moveBackward || player.moveLeft || player.moveRight;
         if (isMoving) {
@@ -2651,19 +2441,16 @@
             const surface = (STATE.season === 'WINTER') ? 'snow' : (camera.position.x < -10) ? 'concrete' : 'grass';
             sound.playFootstep(surface);
           }
-
           toolGroup.position.y = -0.28 + Math.sin(time * 10) * 0.012;
           toolGroup.position.x = 0.30 + Math.cos(time * 5) * 0.008;
         } else {
           toolGroup.position.y = -0.28 + Math.sin(time * 2) * 0.003;
           toolGroup.position.x = 0.30 + Math.cos(time * 1.5) * 0.002;
         }
-
         // Active tool action vibration/animation & continuous operation
         if (activeToolAction) {
           toolGroup.position.z = -0.55 + (Math.random() - 0.5) * 0.015;
           toolGroup.rotation.x = (Math.random() - 0.5) * 0.04;
-
           toolContinuousTimer += delta;
           if (toolContinuousTimer > 0.14) {
             toolContinuousTimer = 0;
@@ -2674,20 +2461,145 @@
           toolGroup.rotation.x = 0;
           toolContinuousTimer = 0;
         }
-
         checkContextPrompt();
       }
-
       // Rotate glowing beacon ring on trailer
       const beacon = trailerGroup.getObjectByName('beaconRing');
       if (beacon) {
         beacon.rotation.z += delta * 0.8;
       }
-
       renderer.render(scene, camera);
     }
-
     // Initialize simulation when page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        initThree();
+        animate();
+      } catch (err) {
+        console.error("Simulation Initialization Error:", err);
+      }
+    });
+  </script>
+</body>
+</html>
+Features & Architecture Summary
+
+Hyper-Realistic Environment & Visuals:
+
+Soft shadows (PCFSoftShadowMap), filmic tone mapping (ACESFilmicToneMapping), and high-performance WebGL.
+Suburban architecture with horizontal vinyl clapboard siding, roof shingles, raised deck porch with support columns, front door, windows, and garage.
+Asphalt driveway with concrete curb, perimeter wooden slat-and-post fence, stone walkway, and a central utility trailer with a glowing drop zone beacon.
+Dynamic seasonal changes: foliage shifts from autumn flame colors to winter bare snow caps, spring budding sprouts, and summer lush canopies.
+
+Exact Seasonal Progression & Game Loop:
+
+Autumn (3 Rounds): Clear finite leaf piles with the leaf blower (1) into your bag, dump into the trailer for cash ($1.50/unit), and earn round completion bonuses.
+Winter (5 Rounds): Shovel snow (2) into your bag and haul it to the designated Yard Boundary Marker ([E]). A 3D snow mound grows as snow is deposited. If the Freeze Threat Timer expires, leftover snow rots the grass underneath, creating bare patches for Spring!
+Spring (1 Round): Sow grass seeds (4) onto bare soil patches ($15/patch) and water them (5) to restore the turf. If you lack funds, the First Suburban Lawn Bank triggers to grant contractor loans.
+Summer (3 Rounds): Mow tall grass clumps with the lawn mower (3). Sell grass clippings at the trailer ($1.25/unit). 50% of sales automatically pay down any outstanding loan debt until cleared!
+
+3D First-Person Held Tools:
+
+3D viewmodels for all 5 tools attached directly to the camera with realistic walking bobbing, idle breathing sway, and continuous operation while holding left-click.
+
+100% Procedural Audio Engine (Web Audio API):
+
+Zero external audio files or CORS issues: includes real-time synthesizers for footsteps on snow/grass/concrete, leaf blower engine roar, snow shovel scrape, lawn mower combustion, water pouring, seed rattles, cash register pings, and victory fanfares.
+
+Ready to Deploy:
+
+Simply commit index.html to any repository and enable GitHub Pages in Repository Settings (Settings -> Pages -> Deploy from branch: main / root).
+make th game mor polished mak it so the snow isnt theree unless its winter i want collision aswell as real physiks your tools have a speichrkapazität of 1 you dont have a bag until u by one a leafblower is far to advanced for the begining and the player gets paid too much so make it more realistick add mre object better animations it should feel like it has been programmed for 5years!  make evry task satasfying 
+
+I have completely overhauled and polished Suburban Yard Master to feel like a high-budget, meticulously crafted simulation that has been refined over years.
+
+The updated file is saved directly to your workspace at index.html.
+
+What Was Overhauled & Added
+1. Strict Seasonal Isolation (Snow is Completely Gone Outside of Winter)
+Zero Snow in Autumn, Spring, or Summer: The snow ground mesh, the roof snow layer, fence caps, and tree snow caps are now strictly hidden and will never appear unless the current season is WINTER.
+Snow Dump Zone Isolation: The boundary stakes, caution tape, and growing 3D snow mound are exclusively spawned and visible in Winter.
+2. Real Collision Physics & Sliding Engine
+Built a custom continuous collision resolution engine with bounding box (AABB) and cylindrical collision volumes.
+Player physically collides with and smoothly slides against:
+House facade & garage wing
+Front porch deck & columns
+Backyard garden tool shed
+Perimeter wooden slat fences
+Central utility trailer
+Curbside mailbox post
+Yard waste bins
+All 4 mature tree trunks
+Surface-accurate footstep audio: dynamic sound detection for walking on lush grass, crisp snow, asphalt/concrete sidewalk, and wooden porch boards.
+3. Capacity of 1 & No Bag at the Beginning
+Bare Hands Starting State: You begin the game with hasBag: false and a strict Speicherkapazität of 1.
+You must physically rake 1 leaf bundle or scoop 1 snow shovel load at a time with your bare hands, walk it to the trailer / boundary pile, and dump it!
+Bag Progression in Hardware Shop ([B] key):
+Plastic Contractor Yard Bag ($8.00) → Capacity: 6 units (a huge early-game relief!)
+Burlap Yard Sack ($18.00) → Capacity: 16 units
+Heavy-Duty Canvas Hauler ($45.00) → Capacity: 36 units
+Steel Garden Wheelbarrow ($95.00) → Capacity: 100 units
+4. Grounded Starter Tools (No Leaf Blower at the Start)
+Autumn Starter: You start with a Hand Yard Rake (3D model with wooden pole and metal tines). It scrapes the lawn with an authentic rake rustle sound to gather leaves.
+The Electric Cyclone Leaf Blower is now a high-tier shop upgrade ($85.00)!
+Summer Starter: You start with a Manual Push Reel Mower with rotating cylinder blades and a mechanical snip-snip sound.
+The Gas-Powered Rotary Mower is an upgrade in the shop ($120.00)!
+5. Realistic Economy
+Honest Contractor Rates:
+Autumn leaves: $0.22 per pile (35 piles = ~$7.70 + $6.00 round bonus).
+Summer clippings: $0.18 per clipping.
+Spring grass seed packs: $2.00 per bare patch (not $15!).
+Starting cash: $2.50.
+Bank loans: $15.00 Seed Fund Loan, $35.00 Tool Advance, $75.00 Pro Line.
+6. Rich Suburban Environment Objects
+Garden Tool Shed: Wooden pitched-roof shed on the east yard boundary.
+Curbside Wooden Mailbox: Mailbox post and metal box at the driveway curb.
+Yard Waste Trash Cans: Green bins sitting near the garage.
+Garden Hose Reel: Wall-mounted green reel on the house siding.
+Porch Patio Bench: Wood bench sitting on the front porch.
+Sidewalk & Street: Concrete sidewalk and asphalt front road with driveway curbs.
+7. Ultra-Satisfying Animations & Game Juice
+Continuous Operation: Holding Left-Click continuously rakes, shovels, mows, or waters as you walk.
+Viewmodel Physics: Dynamic tool bobbing that synchronizes with your walking cadence and sprinting, subtle breathing sway when standing still, and action vibrations when working.
+Dynamic Crosshair & Prompts: Crosshair dynamically highlights interactable targets and displays context-sensitive prompts (Dump Debris into Trailer [E], Carrying: 1/1 Hands Full).
+Quick Controls
+WASD: Move (with collision sliding)
+Shift: Sprint
+Mouse: Look around (click canvas to lock pointer, ESC to pause)
+Left-Click (Hold or Tap): Use active tool
+1, 2, 3, 4, 5 / Mouse Wheel: Select Tool (1: Rake/Blower, 2: Shovel, 3: Reel Mower, 4: Seeds, 5: Watering Can)
+E: Dump leaves/grass into trailer or snow at boundary marker
+B: Open Equipment Shop (buy bags, blowers, boots)
+M: Open Lawn Bank & Credit loans
+          toolGroup.position.y = -0.28 + Math.sin(time * 10) * 0.012;
+          toolGroup.position.x = 0.30 + Math.cos(time * 5) * 0.008;
+        } else {
+          toolGroup.position.y = -0.28 + Math.sin(time * 2) * 0.003;
+          toolGroup.position.x = 0.30 + Math.cos(time * 1.5) * 0.002;
+        }
+        // Active Tool Action Animation & Continuous Operation
+        if (activeToolAction) {
+          toolGroup.position.z = -0.55 + (Math.random() - 0.5) * 0.018;
+          toolGroup.rotation.x = (Math.random() - 0.5) * 0.05;
+          toolContinuousTimer += delta;
+          if (toolContinuousTimer > 0.16) {
+            toolContinuousTimer = 0;
+            useActiveTool();
+          }
+        } else {
+          toolGroup.position.z = -0.55;
+          toolGroup.rotation.x = 0;
+          toolContinuousTimer = 0;
+        }
+        checkContextPrompt();
+      }
+      // Rotate glowing beacon ring on trailer
+      const beacon = trailerGroup.getObjectByName('beaconRing');
+      if (beacon) {
+        beacon.rotation.z += delta * 0.8;
+      }
+      renderer.render(scene, camera);
+    }
     window.addEventListener('DOMContentLoaded', () => {
       try {
         initThree();
