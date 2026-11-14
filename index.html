@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101815">
+<title>Yard Seasons — Landscape Simulator</title>
+
+<style>
+:root {
+  --panel: rgba(15,23,20,.88);
+  --line: rgba(255,255,255,.12);
+  --muted: #9ba9a1;
+  --green: #a7c99c;
+  --green-dark: #243d2c;
+}
+* { box-sizing:border-box }
+html,body {
+  margin:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#101815;
+  color:#f2f4f1;
+  font-family:Inter,Arial,sans-serif;
+}
+canvas { display:block;width:100%;height:100% }
+button { font:inherit;cursor:pointer }
+button:disabled { opacity:.35;cursor:not-allowed }
+#hud { position:fixed;inset:0;pointer-events:none }
+.panel {
+  background:var(--panel);
+  border:1px solid var(--line);
+  backdrop-filter:blur(18px);
+  border-radius:12px;
+  box-shadow:0 12px 35px #0003;
+}
+.muted { color:var(--muted) }
+.eyebrow {
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.2em;
+  color:var(--muted);
+}
+#top-left {
+  position:absolute;top:20px;left:20px;
+  width:260px;padding:17px;
+}
+#top-right {
+  position:absolute;top:20px;right:20px;
+  width:205px;padding:17px;text-align:right;
+}
+#bottom-left {
+  position:absolute;bottom:20px;left:20px;
+  width:245px;padding:15px;
+}
+#instructions {
+  position:absolute;bottom:20px;right:20px;
+  padding:13px 16px;text-align:right;
+  font-size:11px;line-height:1.8;
+}
+#toolbar {
+  position:absolute;bottom:18px;left:50%;
+  transform:translateX(-50%);
+  display:flex;gap:7px;pointer-events:auto;
+}
+.slot {
+  width:75px;height:58px;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:white;font-size:10px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:5px;
+}
+.slot .number { color:var(--muted);font-size:10px }
+.slot.active {
+  border-color:var(--green);
+  background:rgba(75,112,72,.45);
+}
+.slot.unavailable { opacity:.35 }
+#tool-name {
+  position:absolute;bottom:89px;left:50%;
+  transform:translateX(-50%);
+  padding:7px 13px;
+  font-size:11px;letter-spacing:.12em;
+}
+.bar {
+  height:5px;background:#ffffff20;
+  border-radius:20px;overflow:hidden;
+}
+.bar div {
+  height:100%;width:0%;
+  background:var(--green);
+  transition:width .2s;
+}
+#crosshair {
+  position:fixed;z-index:5;
+  top:50%;left:50%;
+  width:8px;height:8px;
+  border:1px solid #fff;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  box-shadow:0 0 5px #000;
+}
+#toast {
+  position:fixed;z-index:15;
+  top:24%;left:50%;
+  transform:translateX(-50%);
+  padding:12px 20px;
+  opacity:0;
+  transition:opacity .2s;
+  pointer-events:none;
+  white-space:nowrap;
+}
+#overlay,#modal {
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.72);
+  z-index:20;padding:20px;
+}
+#modal { z-index:30 }
+.hidden { display:none!important }
+.dialog {
+  width:100%;max-width:570px;
+  max-height:85vh;overflow:auto;
+  padding:28px;
+}
+.primary {
+  background:var(--green);
+  color:#142016;
+  border:0;border-radius:7px;
+  padding:13px 18px;font-weight:700;
+}
+.secondary {
+  background:rgba(255,255,255,.06);
+  color:#fff;border:1px solid var(--line);
+  border-radius:7px;padding:11px 15px;
+}
+.buy-row {
+  display:flex;justify-content:space-between;
+  align-items:center;gap:15px;
+  padding:16px 0;border-bottom:1px solid var(--line);
+}
+.buy-row:last-child { border-bottom:0 }
+@media(max-width:700px) {
+  #top-left { top:10px;left:10px;width:195px;padding:12px }
+  #top-right { top:10px;right:10px;width:145px;padding:12px }
+  #bottom-left { bottom:85px;left:10px;width:180px }
+  #instructions { display:none }
+  #toolbar { bottom:10px;gap:3px }
+  .slot { width:53px;height:48px;font-size:8px }
+  #tool-name { bottom:65px }
+}
+</style>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+
+<body>
+
+<div id="crosshair"></div>
+
+<div id="hud">
+  <section id="top-left" class="panel">
+    <div class="eyebrow">Property management</div>
+    <div id="season" style="font-size:25px;font-weight:650;margin-top:7px">Autumn</div>
+    <div id="round" class="muted" style="font-size:12px;margin-top:4px">Round 1</div>
+    <div class="bar" style="margin-top:15px"><div id="progress"></div></div>
+    <div id="objective" class="muted" style="font-size:11px;margin-top:10px">
+      Collect the fallen leaves.
+    </div>
+    <div id="timer" style="font-size:11px;color:#e9c68c;margin-top:9px"></div>
+  </section>
+
+  <section id="top-right" class="panel">
+    <div class="eyebrow">Available balance</div>
+    <div id="money" style="font-size:29px;font-weight:650;margin-top:5px">$500</div>
+    <div id="debt" style="font-size:11px;color:#e6a19a;margin-top:5px"></div>
+    <div style="font-size:10px;line-height:1.8;margin-top:12px" class="muted">
+      B · Equipment shop<br>
+      N · Bank services
+    </div>
+  </section>
+
+  <section id="bottom-left" class="panel">
+    <div style="display:flex;justify-content:space-between;font-size:12px">
+      <span id="inventory-name">Collection bag</span>
+      <span id="inventory-count">0 / 25</span>
+    </div>
+    <div class="bar" style="margin-top:9px"><div id="bag-bar"></div></div>
+    <div id="inventory-hint" class="muted" style="font-size:10px;margin-top:10px">
+      Return to the trailer to unload.
+    </div>
+  </section>
+
+  <div id="instructions" class="panel muted">
+    WASD — Move<br>
+    SHIFT — Sprint<br>
+    LEFT CLICK — Use equipment<br>
+    1–6 — Select equipment<br>
+    E — Interact / unload<br>
+    B — Equipment shop<br>
+    N — Bank services<br>
+    ESC — Pause
+  </div>
+
+  <div id="toolbar"></div>
+  <div id="tool-name" class="panel">Garden rake</div>
+</div>
+
+<div id="toast" class="panel"></div>
+
+<div id="overlay">
+  <div class="dialog panel">
+    <div class="eyebrow" style="color:var(--green)">Landscape simulation</div>
+    <h1 style="font-size:52px;line-height:.95;font-weight:300;letter-spacing:-3px;margin:22px 0">
+      YARD<br><strong style="font-weight:750">SEASONS</strong>
+    </h1>
+    <p class="muted" style="font-size:14px;line-height:1.8;margin-top:22px">
+      Take responsibility for a residential property throughout the year.
+      Maintain the landscape, complete seasonal contracts, invest in
+      equipment and grow a profitable landscaping business.
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px">
+      <div><div style="color:var(--green);font-size:11px;letter-spacing:.12em">AUTUMN</div><div class="muted" style="font-size:12px;margin-top:5px">Leaf collection</div></div>
+      <div><div style="color:var(--green);font-size:11px;letter-spacing:.12em">WINTER</div><div class="muted" style="font-size:12px;margin-top:5px">Snow removal</div></div>
+      <div><div style="color:var(--green);font-size:11px;letter-spacing:.12em">SPRING</div><div class="muted" style="font-size:12px;margin-top:5px">Lawn restoration</div></div>
+      <div><div style="color:var(--green);font-size:11px;letter-spacing:.12em">SUMMER</div><div class="muted" style="font-size:12px;margin-top:5px">Grass maintenance</div></div>
+    </div>
+    <button id="play" class="primary" style="width:100%;margin-top:32px;letter-spacing:.12em">
+      START WORK
+    </button>
+    <div id="error" style="color:#e6a19a;font-size:11px;margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="modal" class="hidden">
+  <div class="dialog panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h2 id="modal-title" style="font-size:24px;font-weight:650">Equipment shop</h2>
+      <button id="close-modal" class="secondary">CLOSE</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+const rand = (a,b) => a + Math.random() * (b-a);
+const choose = a => a[Math.floor(Math.random()*a.length)];
+const moneyText = n => '$' + Math.round(n).toLocaleString('en-US');
+
+function showError(message) {
+  $('error').textContent = message;
+}
+
+window.addEventListener('error', e => {
+  console.error(e.error || e.message);
+});
+
+window.addEventListener('unhandledrejection', e => {
+  console.error(e.reason);
+});
+
+// ------------------------------------------------------------
+// Renderer
+// ------------------------------------------------------------
+
+let renderer, scene, camera, controls;
+
+try {
+  renderer = new THREE.WebGLRenderer({
+    canvas: document.createElement('canvas'),
+    antialias: true,
+    powerPreference: 'high-performance'
+  });
+
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.15;
+
+  document.body.prepend(renderer.domElement);
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xb9c8bd);
+  scene.fog = new THREE.Fog(0xb9c8bd,38,105);
+
+  camera = new THREE.PerspectiveCamera(
+    72,innerWidth/innerHeight,.1,180
+  );
+  camera.position.set(0,1.7,12);
+  scene.add(camera);
+
+  controls = new PointerLockControls(camera,document.body);
+
+} catch(e) {
+  showError('Unable to initialize WebGL: ' + e.message);
+  throw e;
+}
+
+window.addEventListener('resize',()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,1.75));
+});
+
+// ------------------------------------------------------------
+// Lighting
+// ------------------------------------------------------------
+
+const hemi = new THREE.HemisphereLight(0xe2edff,0x5a503d,1.35);
+scene.add(hemi);
+
+const sun = new THREE.DirectionalLight(0xffe2bf,2.8);
+sun.position.set(-25,45,25);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left = -35;
+sun.shadow.camera.right = 35;
+sun.shadow.camera.top = 35;
+sun.shadow.camera.bottom = -35;
+sun.shadow.normalBias = .035;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0xb9d5ef,.5);
+fill.position.set(20,12,-20);
+scene.add(fill);
+
+// ------------------------------------------------------------
+// Materials and geometry
+// ------------------------------------------------------------
+
+function mat(color,roughness=.88,metalness=0) {
+  return new THREE.MeshStandardMaterial({
+    color,roughness,metalness
+  });
+}
+
+const M = {
+  grass: mat(0x527a40),
+  grassAlt: mat(0x64864b),
+  soil: mat(0x63462f),
+  concrete: mat(0x989995),
+  wood: mat(0x75563c),
+  darkWood: mat(0x493a2e),
+  metal: mat(0x66716d,.45,.55),
+  rubber: mat(0x171a19),
+  snow: mat(0xf0f4f7,.82),
+  leaf: [
+    mat(0xb85e28),mat(0xc18b36),
+    mat(0x8c3d25),mat(0x9d6c30)
+  ]
+};
+
+function mesh(geometry,material,x=0,y=0,z=0,shadow=true) {
+  const o = new THREE.Mesh(geometry,material);
+  o.position.set(x,y,z);
+  o.castShadow = shadow;
+  o.receiveShadow = true;
+  scene.add(o);
+  return o;
+}
+
+function box(w,h,d,material,x,y,z) {
+  return mesh(new THREE.BoxGeometry(w,h,d),material,x,y,z);
+}
+
+// ------------------------------------------------------------
+// Ground and property
+// ------------------------------------------------------------
+
+const ground = mesh(
+  new THREE.PlaneGeometry(100,100),M.grass,0,0,0,false
+);
+ground.rotation.x = -Math.PI/2;
+
+const road = mesh(
+  new THREE.PlaneGeometry(100,7),
+  mat(0x353938),0,.02,25,false
+);
+road.rotation.x = -Math.PI/2;
+
+const driveway = mesh(
+  new THREE.PlaneGeometry(5,32),
+  M.concrete,12,.025,7,false
+);
+driveway.rotation.x = -Math.PI/2;
+
+// House
+const house = new THREE.Group();
+scene.add(house);
+
+function houseBox(w,h,d,m,x,y,z) {
+  const o = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  o.position.set(x,y,z);
+  o.castShadow = true;
+  o.receiveShadow = true;
+  house.add(o);
+  return o;
+}
+
+houseBox(16,6,8,mat(0xd4c9b5),0,3,-24);
+houseBox(17,.4,9,mat(0x493a31),0,6.2,-24);
+houseBox(1.6,2.8,.2,mat(0x63442e),0,1.4,-19.9);
+
+[-5,5].forEach(x=>{
+  houseBox(2.5,1.8,.12,mat(0x263c4a,.2,.3),x,3.6,-19.9);
+});
+
+const roofA = houseBox(17,.35,6,mat(0x514039),0,7.1,-25.5);
+roofA.rotation.x = -.55;
+const roofB = houseBox(17,.35,6,mat(0x514039),0,7.1,-22.5);
+roofB.rotation.x = .55;
+
+// Fence
+function fence(a,b) {
+  const dx = b[0]-a[0], dz = b[1]-a[1];
+  const len = Math.hypot(dx,dz);
+  const n = Math.ceil(len/.7);
+
+  for(let i=0;i<=n;i++) {
+    const t=i/n;
+    box(.15,1.5,.15,M.wood,a[0]+dx*t,.75,a[1]+dz*t);
+  }
+
+  for(const y of [.45,1.1]) {
+    const rail=box(len,.12,.12,M.darkWood,
+      (a[0]+b[0])/2,y,(a[1]+b[1])/2);
+    rail.rotation.y = -Math.atan2(dz,dx);
+  }
+}
+
+fence([-20,-19],[-20,20]);
+fence([-20,20],[20,20]);
+fence([20,20],[20,-19]);
+
+// ------------------------------------------------------------
+// Trailer and snow delivery marker
+// ------------------------------------------------------------
+
+const trailer = new THREE.Group();
+trailer.position.set(2,0,1);
+scene.add(trailer);
+
+function trailerBox(w,h,d,m,x,y,z) {
+  const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);
+  o.position.set(x,y,z);
+  o.castShadow=true;
+  o.receiveShadow=true;
+  trailer.add(o);
+  return o;
+}
+
+trailerBox(3.5,.15,2.4,M.metal,0,.75,0);
+trailerBox(3.5,.75,.12,M.metal,0,1.1,1.15);
+trailerBox(3.5,.75,.12,M.metal,0,1.1,-1.15);
+trailerBox(.12,.75,2.4,M.metal,1.7,1.1,0);
+trailerBox(.12,.75,2.4,M.metal,-1.7,1.1,0);
+trailerBox(1.5,.1,.12,M.metal,2.4,.65,0);
+
+[-1.2,1.2].forEach(z=>{
+  const wheel=new THREE.Mesh(
+    new THREE.CylinderGeometry(.38,.38,.2,20),M.rubber
+  );
+  wheel.rotation.x=Math.PI/2;
+  wheel.position.set(0,.38,z);
+  trailer.add(wheel);
+});
+
+const trailerPosition = new THREE.Vector3(2,0,1);
+
+// Snow delivery zone
+const snowMarker = new THREE.Vector3(-15,0,15);
+const marker = new THREE.Group();
+scene.add(marker);
+
+const markerBase = new THREE.Mesh(
+  new THREE.CircleGeometry(2.1,40),
+  new THREE.MeshStandardMaterial({
+    color:0xd8e5ed,
+    transparent:true,
+    opacity:.25,
+    roughness:1
+  })
+);
+markerBase.rotation.x=-Math.PI/2;
+markerBase.position.y=.035;
+marker.add(markerBase);
+
+const markerRing = new THREE.Mesh(
+  new THREE.RingGeometry(1.85,2.05,48),
+  new THREE.MeshBasicMaterial({color:0x8db6c9})
+);
+markerRing.rotation.x=-Math.PI/2;
+markerRing.position.y=.055;
+marker.add(markerRing);
+marker.position.set(snowMarker.x,0,snowMarker.z);
+marker.visible=false;
+
+// ------------------------------------------------------------
+// Trees
+// ------------------------------------------------------------
+
+const trees=[];
+const treeLocations=[
+  [-14,-11],[13,-12],[-13,8],[14,12],
+  [-4,14],[9,-5],[-17,1],[17,-2]
+];
+
+function createTree(x,z) {
+  const group=new THREE.Group();
+  group.position.set(x,0,z);
+  scene.add(group);
+
+  const trunk=new THREE.Mesh(
+    new THREE.CylinderGeometry(.22,.4,4.5,10),
+    mat(0x58402b)
+  );
+  trunk.position.y=2.25;
+  trunk.castShadow=true;
+  group.add(trunk);
+
+  const canopy=new THREE.Group();
+  group.add(canopy);
+
+  for(let i=0;i<10;i++) {
+    const leaf=new THREE.Mesh(
+      new THREE.IcosahedronGeometry(rand(1,1.5),1),
+      choose(M.leaf)
+    );
+    leaf.position.set(
+      rand(-1.5,1.5),rand(4,6.4),rand(-1.5,1.5)
+    );
+    leaf.castShadow=true;
+    canopy.add(leaf);
+  }
+
+  const winterCanopy=new THREE.Group();
+  group.add(winterCanopy);
+
+  for(let i=0;i<8;i++) {
+    const snow=new THREE.Mesh(
+      new THREE.SphereGeometry(rand(.45,.9),10,8),M.snow
+    );
+    snow.position.set(
+      rand(-1.4,1.4),rand(4,6),rand(-1.4,1.4)
+    );
+    winterCanopy.add(snow);
+  }
+
+  trees.push({canopy,winterCanopy});
+}
+
+treeLocations.forEach(p=>createTree(...p));
+
+// ------------------------------------------------------------
+// Seasonal data
+// ------------------------------------------------------------
+
+const seasons=[
+  {name:'Autumn',task:'Leaf collection',rounds:3},
+  {name:'Winter',task:'Snow removal',rounds:6},
+  {name:'Spring',task:'Lawn restoration',rounds:1},
+  {name:'Summer',task:'Grass maintenance',rounds:3}
+];
+
+let seasonIndex=0;
+let round=0;
+let year=1;
+
+let money=500;
+let debt=0;
+let damage=0;
+
+let quota=0;
+let completed=0;
+let timer=0;
+let roundActive=false;
+let roundTransition=false;
+
+let inventory={type:null,count:0};
+let seeds=0;
+
+const upgrades={
+  bag:{name:'Professional collection bag',level:0,max:5,base:80,description:'Increases collection capacity.'},
+  rake:{name:'Wide professional rake',level:0,max:4,base:100,description:'Increases collection reach.'},
+  blower:{name:'High-output leaf blower',level:0,max:4,base:160,description:'Improves leaf collection speed.'},
+  shovel:{name:'Reinforced snow shovel',level:0,max:4,base:100,description:'Improves snow removal.'},
+  mower:{name:'Commercial mower deck',level:0,max:4,base:180,description:'Improves mowing efficiency.'},
+  spreader:{name:'Automatic seed spreader',level:0,max:1,base:350,description:'Seeds nearby patches automatically.'}
+};
+
+function capacity() {
+  return 25+upgrades.bag.level*15;
+}
+function upgradePrice(k) {
+  const u=upgrades[k];
+  return Math.round(u.base*Math.pow(1.65,u.level));
+}
+
+const tools=[
+  {name:'Garden rake',season:0},
+  {name:'Leaf blower',season:0},
+  {name:'Snow shovel',season:1},
+  {name:'Lawn mower',season:3},
+  {name:'Seed spreader',season:2},
+  {name:'Watering can',season:2}
+];
+
+let selectedTool=0;
+
+// ------------------------------------------------------------
+// Debris
+// ------------------------------------------------------------
+
+const debrisGroup=new THREE.Group();
+scene.add(debrisGroup);
+let debris=[];
+
+function clearDebris() {
+  for(const d of debris) {
+    debrisGroup.remove(d.mesh);
+    d.mesh.geometry.dispose();
+  }
+  debris=[];
+}
+
+function spawnDebris(type,n) {
+  clearDebris();
+
+  for(let i=0;i<n;i++) {
+    let x,z,tries=0;
+    do {
+      x=rand(-17,17);
+      z=rand(-16,17);
+      tries++;
+    } while(
+      tries<100 &&
+      (Math.hypot(x-2,z-1)<3 || Math.hypot(x+15,z-15)<3)
+    );
+
+    let object;
+
+    if(type==='leaf') {
+      object=new THREE.Mesh(
+        new THREE.PlaneGeometry(.35,.23),
+        choose(M.leaf)
+      );
+      object.rotation.x=-Math.PI/2;
+      object.rotation.z=rand(0,Math.PI*2);
+      object.position.set(x,.04,z);
+    } else {
+      object=new THREE.Mesh(
+        new THREE.DodecahedronGeometry(.3,0),M.snow
+      );
+      object.scale.set(1,.55,1);
+      object.position.set(x,.15,z);
+    }
+
+    object.castShadow=true;
+    debrisGroup.add(object);
+    debris.push({mesh:object,type,active:true});
+  }
+}
+
+// ------------------------------------------------------------
+// Spring patches
+// ------------------------------------------------------------
+
+let patches=[];
+
+function clearPatches() {
+  patches.forEach(p=>{
+    scene.remove(p.mesh);
+    p.mesh.geometry.dispose();
+    p.mesh.material.dispose();
+  });
+  patches=[];
+}
+
+function createPatches(n) {
+  clearPatches();
+
+  for(let i=0;i<n;i++) {
+    let x,z,tries=0;
+
+    do {
+      x=rand(-16,16);
+      z=rand(-16,17);
+      tries++;
+    } while(
+      tries<100 &&
+      (Math.hypot(x-2,z-1)<4 ||
+      patches.some(p=>Math.hypot(p.x-x,p.z-z)<2))
+    );
+
+    const patch=new THREE.Mesh(
+      new THREE.CircleGeometry(.8,24),
+      mat(0x63462f)
+    );
+    patch.rotation.x=-Math.PI/2;
+    patch.position.set(x,.03,z);
+    scene.add(patch);
+
+    patches.push({x,z,state:0,mesh:patch});
+  }
+}
+
+// ------------------------------------------------------------
+// Summer grass
+// ------------------------------------------------------------
+
+let grass=[];
+
+function clearGrass() {
+  grass.forEach(g=>{
+    scene.remove(g.mesh);
+    g.mesh.geometry.dispose();
+  });
+  grass=[];
+}
+
+function createGrass() {
+  clearGrass();
+
+  for(let x=-17;x<=16;x+=1.3) {
+    for(let z=-16;z<=17;z+=1.3) {
+      if(Math.hypot(x-2,z-1)<3)continue;
+      if(Math.hypot(x+15,z-15)<3)continue;
+
+      const g=new THREE.Mesh(
+        new THREE.BoxGeometry(.9,.18,.9),
+        choose([M.grass,M.grassAlt])
+      );
+      g.position.set(x,.09,z);
+      scene.add(g);
+      grass.push({x,z,mesh:g,cut:false});
+    }
+  }
+}
+
+// ------------------------------------------------------------
+// Season appearance
+// ------------------------------------------------------------
+
+function applySeason() {
+  const settings=[
+    [0x9ca77e,0xb9c8bd,0xffe3ba],
+    [0xdde5ec,0xbac9d8,0xe0e9f4],
+    [0x927d58,0xb9d4db,0xffe8c8],
+    [0x668d48,0x9bc9df,0xfff1d4]
+  ][seasonIndex];
+
+  ground.material.color.setHex(settings[0]);
+  scene.background.setHex(settings[1]);
+  scene.fog.color.setHex(settings[1]);
+  sun.color.setHex(settings[2]);
+
+  const winter=seasonIndex===1;
+  trees.forEach(t=>{
+    t.canopy.visible=!winter;
+    t.winterCanopy.visible=winter;
+  });
+
+  marker.visible=winter;
+
+  clearDebris();
+  clearPatches();
+  clearGrass();
+
+  if(seasonIndex===0)spawnDebris('leaf',quota);
+  if(seasonIndex===1)spawnDebris('snow',quota);
+  if(seasonIndex===2)createPatches(8+Math.ceil(damage/3));
+  if(seasonIndex===3)createGrass();
+
+  inventory={type:null,count:0};
+  selectSeasonTool();
+}
+
+// ------------------------------------------------------------
+// Economy
+// ------------------------------------------------------------
+
+function earn(amount) {
+  if(amount<=0)return;
+
+  const repayment=Math.min(debt,amount*.5);
+  debt-=repayment;
+  money+=amount-repayment;
+  money=Math.round(money*100)/100;
+
+  playCoin();
+}
+
+function buySeeds() {
+  const cost=patches.length*4;
+
+  if(money>=cost) {
+    money-=cost;
+    seeds=patches.length;
+    return true;
+  }
+
+  const shortfall=cost-money;
+  const credit=Math.ceil(shortfall*1.1);
+
+  debt+=credit;
+  money+=credit;
+  money-=cost;
+  seeds=patches.length;
+
+  toast('Seed financing approved.');
+  return true;
+}
+
+// ------------------------------------------------------------
+// Work orders
+// ------------------------------------------------------------
+
+function startRound() {
+  roundActive=true;
+  roundTransition=false;
+  completed=0;
+  inventory={type:null,count:0};
+
+  const s=seasonIndex;
+
+  if(s===0) {
+    quota=70+round*20+(year-1)*10;
+    spawnDebris('leaf',quota);
+  }
+
+  if(s===1) {
+    quota=55+round*12+(year-1)*8;
+    timer=115-round*7;
+    spawnDebris('snow',quota);
+  }
+
+  if(s===2) {
+    createPatches(8+Math.ceil(damage/3));
+    quota=patches.length;
+    seeds=0;
+    buySeeds();
+  }
+
+  if(s===3) {
+    createGrass();
+    quota=grass.length;
+  }
+
+  updateHUD();
+  toast('New work order started.');
+}
+
+function canFinish() {
+  if(!roundActive||roundTransition)return false;
+
+  if(seasonIndex===0||seasonIndex===1||seasonIndex===3) {
+    return completed>=quota&&inventory.count===0;
+  }
+
+  return patches.length>0&&patches.every(p=>p.state===2);
+}
+
+function finishRound(message) {
+  if(!roundActive||roundTransition)return;
+
+  roundActive=false;
+  roundTransition=true;
+  stopEquipmentSound();
+
+  toast(message||'Work order completed.');
+
+  setTimeout(()=>{
+    if(!gameStarted)return;
+
+    round++;
+    if(round>=seasons[seasonIndex].rounds) {
+      round=0;
+      const previous=seasonIndex;
+      seasonIndex=(seasonIndex+1)%4;
+
+      if(seasonIndex===0)year++;
+      if(previous===2)damage=0;
+
+      applySeason();
+    }
+
+    startRound();
+  },2200);
+}
+
+// ------------------------------------------------------------
+// Audio
+// ------------------------------------------------------------
+
+let audioContext=null;
+let noiseGain=null;
+let engineGain=null;
+let noiseSource=null;
+let engineOsc=null;
+
+function initAudio() {
+  if(audioContext) {
+    if(audioContext.state==='suspended')audioContext.resume();
+    return;
+  }
+
+  try {
+    audioContext=new AudioContext();
+
+    const master=audioContext.createGain();
+    master.gain.value=.2;
+    master.connect(audioContext.destination);
+
+    const buffer=audioContext.createBuffer(
+      1,audioContext.sampleRate,audioContext.sampleRate
+    );
+    const data=buffer.getChannelData(0);
+
+    for(let i=0;i<data.length;i++)data[i]=Math.random()*2-1;
+
+    noiseSource=audioContext.createBufferSource();
+    noiseSource.buffer=buffer;
+    noiseSource.loop=true;
+
+    const filter=audioContext.createBiquadFilter();
+    filter.type='lowpass';
+    filter.frequency.value=1500;
+
+    noiseGain=audioContext.createGain();
+    noiseGain.gain.value=0;
+
+    noiseSource.connect(filter).connect(noiseGain).connect(master);
+    noiseSource.start();
+
+    engineOsc=audioContext.createOscillator();
+    engineOsc.type='sawtooth';
+    engineOsc.frequency.value=65;
+
+    engineGain=audioContext.createGain();
+    engineGain.gain.value=0;
+
+    engineOsc.connect(engineGain).connect(master);
+    engineOsc.start();
+
+  } catch(e) {
+    console.warn('Audio unavailable',e);
+  }
+}
+
+function sound(type) {
+  if(!audioContext||!noiseGain)return;
+
+  const settings={
+    rake:[.07,1300,0],
+    blower:[.23,2200,0],
+    shovel:[.14,700,0],
+    mower:[.08,700,.10],
+    seed:[.035,1700,0],
+    water:[.08,1200,0],
+    off:[0,1000,0]
+  };
+
+  const c=settings[type]||settings.off;
+
+  noiseGain.gain.setTargetAtTime(
+    c[0],audioContext.currentTime,.04
+  );
+  engineGain.gain.setTargetAtTime(
+    c[2],audioContext.currentTime,.04
+  );
+}
+
+function stopEquipmentSound() {
+  sound('off');
+}
+
+function playCoin() {
+  if(!audioContext)return;
+
+  const osc=audioContext.createOscillator();
+  const gain=audioContext.createGain();
+
+  osc.frequency.setValueAtTime(850,audioContext.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(
+    1350,audioContext.currentTime+.12
+  );
+
+  gain.gain.setValueAtTime(.1,audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(
+    .001,audioContext.currentTime+.25
+  );
+
+  osc.connect(gain).connect(audioContext.destination);
+  osc.start();
+  osc.stop(audioContext.currentTime+.27);
+}
+
+// ------------------------------------------------------------
+// Tools
+// ------------------------------------------------------------
+
+function selectTool(index) {
+  if(index<0||index>=tools.length)return;
+  if(tools[index].season!==seasonIndex) {
+    toast('This equipment is not used for the current contract.');
+    return;
+  }
+
+  selectedTool=index;
+  $('tool-name').textContent=tools[index].name;
+  buildToolbar();
+}
+
+function selectSeasonTool() {
+  const index=tools.findIndex(t=>t.season===seasonIndex);
+  selectedTool=index<0?0:index;
+  $('tool-name').textContent=tools[selectedTool].name;
+  buildToolbar();
+}
+
+function buildToolbar() {
+  const el=$('toolbar');
+  el.innerHTML='';
+
+  tools.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='slot '+(i===selectedTool?'active':'')+
+      (t.season!==seasonIndex?' unavailable':'');
+    b.innerHTML=
+      '<span class="number">'+(i+1)+'</span>'+
+      '<span>'+t.name+'</span>';
+    b.disabled=t.season!==seasonIndex;
+    b.onclick=()=>selectTool(i);
+    el.appendChild(b);
+  });
+}
+
+// ------------------------------------------------------------
+// Player and keyboard
+// ------------------------------------------------------------
+
+const keys={};
+let mouseDown=false;
+let gameStarted=false;
+let modalOpen=false;
+let useCooldown=0;
+
+window.addEventListener('keydown',e=>{
+  keys[e.code]=true;
+
+  if(e.repeat)return;
+
+  if(e.code.startsWith('Digit')) {
+    const n=Number(e.code.slice(5))-1;
+    if(n>=0&&n<6)selectTool(n);
+  }
+
+  if(e.code==='KeyE')interact();
+  if(e.code==='KeyB'&&!modalOpen)openShop();
+  if(e.code==='KeyN'&&!modalOpen)openBank();
+  if(e.code==='Escape'&&modalOpen)closeModal();
+});
+
+window.addEventListener('keyup',e=>{
+  keys[e.code]=false;
+});
+
+window.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  if(modalOpen)return;
+
+  if(!controls.isLocked) {
+    if(gameStarted)controls.lock();
+    return;
+  }
+
+  mouseDown=true;
+});
+
+window.addEventListener('mouseup',e=>{
+  if(e.button!==0)return;
+  mouseDown=false;
+  stopEquipmentSound();
+});
+
+window.addEventListener('blur',()=>{
+  mouseDown=false;
+  stopEquipmentSound();
+  for(const k in keys)keys[k]=false;
+});
+
+window.addEventListener('wheel',e=>{
+  if(!controls.isLocked||modalOpen)return;
+
+  const next=(selectedTool+(e.deltaY>0?1:5))%6;
+  selectTool(next);
+});
+
+// ------------------------------------------------------------
+// Target selection
+// ------------------------------------------------------------
+
+const forward=new THREE.Vector3();
+const toTarget=new THREE.Vector3();
+
+function nearestTarget() {
+  const candidates=
+    seasonIndex===0||seasonIndex===1?debris:
+    seasonIndex===2?patches:grass;
+
+  let best=null;
+  let bestDistance=5;
+
+  camera.getWorldDirection(forward);
+  forward.y=0;
+  forward.normalize();
+
+  for(const item of candidates) {
+    if(item.active===false||item.cut)continue;
+    if(seasonIndex===2&&item.state===2)continue;
+
+    const pos=item.mesh.position;
+    const dx=pos.x-camera.position.x;
+    const dz=pos.z-camera.position.z;
+    const d=Math.hypot(dx,dz);
+
+    if(d>bestDistance)continue;
+
+    toTarget.set(dx,0,dz).normalize();
+    if(toTarget.dot(forward)<.15)continue;
+
+    best=item;
+    bestDistance=d;
+  }
+
+  return best;
+}
+
+// ------------------------------------------------------------
+// Collecting and equipment use
+// ------------------------------------------------------------
+
+function collectDebris(item,type) {
+  if(!item||!item.active)return;
+  if(inventory.count>=capacity())return;
+
+  item.active=false;
+  item.mesh.visible=false;
+
+  inventory.type=type;
+  inventory.count++;
+  completed++;
+
+  updateHUD();
+}
+
+function useEquipment() {
+  if(!roundActive||modalOpen||!mouseDown||!controls.isLocked)return;
+
+  useCooldown-=clock.getDelta();
+  if(useCooldown>0)return;
+
+  const target=nearestTarget();
+  if(!target)return;
+
+  const s=seasonIndex;
+  const p=camera.position;
+  const distance=Math.hypot(
+    target.mesh.position.x-p.x,
+    target.mesh.position.z-p.z
+  );
+
+  if(distance>5)return;
+
+  if(s===0) {
+    if(selectedTool!==0&&selectedTool!==1)return;
+    if(inventory.count>=capacity())return;
+
+    const reach=selectedTool===0?
+      2.7+upgrades.rake.level*.45:
+      3.8+upgrades.blower.level*.5;
+
+    if(distance>reach)return;
+
+    sound(selectedTool===0?'rake':'blower');
+    useCooldown=selectedTool===0?.12:.07;
+    collectDebris(target,'leaf');
+  }
+
+  if(s===1) {
+    if(selectedTool!==2)return;
+    if(distance>3+upgrades.shovel.level*.35)return;
+    if(inventory.count>=capacity())return;
+
+    sound('shovel');
+    useCooldown=.14;
+    collectDebris(target,'snow');
+  }
+
+  if(s===2) {
+    const patch=target;
+
+    if(selectedTool===4&&patch.state===0&&seeds>0) {
+      patch.state=1;
+      patch.mesh.material.color.setHex(0x493b2c);
+      seeds--;
+
+      if(upgrades.spreader.level>0) {
+        for(const p of patches) {
+          if(p.state===0&&seeds>0&&
+            Math.hypot(p.x-patch.x,p.z-patch.z)<2) {
+            p.state=1;
+            p.mesh.material.color.setHex(0x493b2c);
+            seeds--;
+          }
+        }
+      }
+
+      sound('seed');
+      useCooldown=.35;
+    }
+
+    if(selectedTool===5&&patch.state===1) {
+      patch.state=2;
+      patch.mesh.material.color.setHex(0x60964c);
+      sound('water');
+      useCooldown=.35;
+    }
+
+    if(patches.length&&patches.every(p=>p.state===2)) {
+      finishRound('Lawn restoration completed.');
+    }
+  }
+
+  if(s===3) {
+    if(selectedTool!==3)return;
+    if(distance>3+upgrades.mower.level*.35)return;
+    if(inventory.count>=capacity())return;
+
+    target.cut=true;
+    target.mesh.visible=false;
+
+    inventory.type='clip';
+    inventory.count++;
+    completed++;
+
+    sound('mower');
+    useCooldown=.07;
+
+    if(completed>=quota) {
+      toast('All lawn sections cut. Return to the trailer.');
+    }
+  }
+}
+
+// ------------------------------------------------------------
+// Unloading and interaction
+// ------------------------------------------------------------
+
+function unload() {
+  if(inventory.count<=0)return false;
+
+  const type=inventory.type;
+  const count=inventory.count;
+
+  if(type==='leaf') {
+    earn(count*1.5);
+  } else if(type==='clip') {
+    earn(count*.8);
+  }
+
+  inventory={type:null,count:0};
+  updateHUD();
+
+  if(canFinish()) {
+    const message=
+      seasonIndex===0?'Leaf collection completed.':
+      seasonIndex===1?'Snow removal completed.':
+      'Mowing contract completed.';
+
+    finishRound(message);
+  } else {
+    toast('Material unloaded successfully.');
+  }
+
+  return true;
+}
+
+function interact() {
+  if(!gameStarted||modalOpen)return;
+
+  const p=camera.position;
+
+  if(seasonIndex===1) {
+    const d=Math.hypot(
+      p.x-snowMarker.x,p.z-snowMarker.z
+    );
+
+    if(d<5) {
+      if(inventory.type==='snow'&&inventory.count>0) {
+        inventory={type:null,count:0};
+        updateHUD();
+
+        if(canFinish()) {
+          finishRound('Snow removal completed.');
+        } else {
+          toast('Snow deposited in the designated area.');
+        }
+      } else {
+        toast('Collect snow with your shovel before unloading.');
+      }
+      return;
+    }
+  }
+
+  const trailerDistance=Math.hypot(
+    p.x-trailerPosition.x,p.z-trailerPosition.z
+  );
+
+  if(trailerDistance<6) {
+    if(inventory.type==='snow') {
+      toast('Snow must be deposited at the marked boundary area.');
+      return;
+    }
+
+    if(inventory.count>0) {
+      unload();
+      return;
+    }
+
+    toast('Your collection bag is empty.');
+    return;
+  }
+
+  if(inventory.count>=capacity()) {
+    toast('Collection capacity reached. Return to the unloading area.');
+  } else {
+    toast('Nothing to interact with here.');
+  }
+}
+
+// ------------------------------------------------------------
+// Shop
+// ------------------------------------------------------------
+
+function openModal(title,html,closable=true) {
+  modalOpen=true;
+  mouseDown=false;
+  stopEquipmentSound();
+  controls.unlock();
+
+  $('modal-title').textContent=title;
+  $('modal-body').innerHTML=html;
+  $('modal').classList.remove('hidden');
+  $('close-modal').style.display=closable?'block':'none';
+}
+
+function closeModal() {
+  modalOpen=false;
+  $('modal').classList.add('hidden');
+
+  if(gameStarted)controls.lock();
+}
+
+$('close-modal').addEventListener('click',closeModal);
+
+function openShop() {
+  if(!gameStarted||modalOpen)return;
+
+  const rows=Object.entries(upgrades).map(([key,u])=>{
+    const maxed=u.level>=u.max;
+    const cost=upgradePrice(key);
+
+    return `
+      <div class="buy-row">
+        <div>
+          <div style="font-size:14px;font-weight:650">${u.name}</div>
+          <div class="muted" style="font-size:11px;margin-top:5px">${u.description}</div>
+          <div class="muted" style="font-size:10px;margin-top:6px">
+            Level ${u.level} / ${u.max}
+          </div>
+        </div>
+        <button class="${maxed?'secondary':'primary'}"
+          data-upgrade="${key}" ${maxed?'disabled':''}>
+          ${maxed?'MAX':moneyText(cost)}
+        </button>
+      </div>`;
+  }).join('');
+
+  openModal('Equipment shop',`
+    <div class="muted" style="font-size:12px;margin-bottom:15px">
+      Invest in professional equipment to improve productivity.
+    </div>
+    <div style="font-size:13px;color:var(--green);margin-bottom:8px">
+      Available balance: ${moneyText(money)}
+    </div>
+    ${rows}
+  `);
+
+  document.querySelectorAll('[data-upgrade]').forEach(button=>{
+    button.addEventListener('click',()=>{
+      const key=button.dataset.upgrade;
+      const u=upgrades[key];
+      const cost=upgradePrice(key);
+
+      if(u.level>=u.max||money<cost) {
+        toast('Insufficient funds.');
+        return;
+      }
+
+      money-=cost;
+      u.level++;
+
+      openShop();
+      updateHUD();
+    });
+  });
+}
+
+// ------------------------------------------------------------
+// Bank
+// ------------------------------------------------------------
+
+function openBank() {
+  if(!gameStarted||modalOpen)return;
+
+  openModal('Bank services',`
+    <div class="muted" style="font-size:12px;margin-bottom:18px">
+      Manage the finances of your landscaping business.
+    </div>
+
+    <div class="panel" style="padding:17px;margin-bottom:18px">
+      <div class="eyebrow">Account balance</div>
+      <div style="font-size:30px;font-weight:650;margin-top:5px">
+        ${moneyText(money)}
+      </div>
+      <div style="font-size:12px;color:#e6a19a;margin-top:9px">
+        Outstanding credit: ${moneyText(debt)}
+      </div>
+    </div>
+
+    <p class="muted" style="font-size:12px;line-height:1.7;margin-bottom:18px">
+      Credit is issued with a 10% service charge.
+      Half of future contract payments is automatically allocated
+      to outstanding credit.
+    </p>
+
+    <button id="take-loan" class="primary" style="width:100%">
+      Request $250 credit
+    </button>
+
+    <button id="repay-loan" class="secondary" style="width:100%;margin-top:9px">
+      Repay outstanding debt
+    </button>
+  `);
+
+  $('take-loan').onclick=()=>{
+    debt+=275;
+    money+=250;
+    openBank();
+    updateHUD();
+  };
+
+  $('repay-loan').onclick=()=>{
+    const amount=Math.min(money,debt);
+    money-=amount;
+    debt-=amount;
+    openBank();
+    updateHUD();
+  };
+}
+
+// ------------------------------------------------------------
+// HUD
+// ------------------------------------------------------------
+
+function updateHUD() {
+  const s=seasons[seasonIndex];
+
+  $('season').textContent=s.name;
+  $('round').textContent=
+    s.task+' · Round '+(round+1)+'/'+s.rounds+' · Year '+year;
+
+  let total=quota;
+  let done=completed;
+
+  if(seasonIndex===2) {
+    total=patches.length;
+    done=patches.filter(p=>p.state===2).length;
+  }
+
+  $('progress').style.width=
+    (total?clamp(done/total*100,0,100):0)+'%';
+
+  const objectives=[
+    'Collect fallen leaves and unload them at the trailer.',
+    'Collect snow and deposit it at the marked boundary area.',
+    'Seed bare patches and water the newly seeded soil.',
+    'Mow the lawn and unload the grass clippings.'
+  ];
+
+  $('objective').textContent=objectives[seasonIndex];
+  $('money').textContent=moneyText(money);
+  $('debt').textContent=debt>0?'Outstanding credit: '+moneyText(debt):'';
+
+  $('inventory-count').textContent=
+    inventory.count+' / '+capacity();
+
+  $('bag-bar').style.width=
+    clamp(inventory.count/capacity()*100,0,100)+'%';
+
+  $('inventory-name').textContent=
+    inventory.type==='snow'?'Shovel load':
+    inventory.type==='clip'?'Grass catcher':'Collection bag';
+
+  $('inventory-hint').textContent=
+    seasonIndex===1?
+      'Deposit snow at the marked boundary area.':
+      'Return to the trailer to unload.';
+
+  $('timer').textContent=
+    seasonIndex===1&&roundActive?
+      'Remaining time: '+Math.max(0,Math.ceil(timer))+' seconds':'';
+}
+
+// ------------------------------------------------------------
+// Notifications
+// ------------------------------------------------------------
+
+let toastTimeout;
+
+function toast(message) {
+  const el=$('toast');
+  el.textContent=message;
+  el.style.opacity='1';
+
+  clearTimeout(toastTimeout);
+  toastTimeout=setTimeout(()=>{
+    el.style.opacity='0';
+  },1900);
+}
+
+// ------------------------------------------------------------
+// Movement
+// ------------------------------------------------------------
+
+function movement(dt) {
+  if(!controls.isLocked||modalOpen)return;
+
+  let forwardMove=0;
+  let rightMove=0;
+
+  if(keys.KeyW)forwardMove+=1;
+  if(keys.KeyS)forwardMove-=1;
+  if(keys.KeyD)rightMove+=1;
+  if(keys.KeyA)rightMove-=1;
+
+  const length=Math.hypot(forwardMove,rightMove);
+
+  if(length>0) {
+    forwardMove/=length;
+    rightMove/=length;
+
+    const speed=(keys.ShiftLeft||keys.ShiftRight)?8.5:5.2;
+    controls.moveForward(forwardMove*speed*dt);
+    controls.moveRight(rightMove*speed*dt);
+  }
+
+  camera.position.x=clamp(camera.position.x,-19,19);
+  camera.position.z=clamp(camera.position.z,-18,18);
+  camera.position.y=1.7;
+}
+
+// ------------------------------------------------------------
+// Winter deadline
+// ------------------------------------------------------------
+
+function updateWinter(dt) {
+  if(seasonIndex!==1||!roundActive)return;
+
+  timer-=dt;
+
+  if(timer<=0) {
+    const remaining=debris.filter(d=>d.active).length+inventory.count;
+
+    damage+=remaining;
+
+    debris.forEach(d=>{
+      d.active=false;
+      d.mesh.visible=false;
+    });
+
+    inventory={type:null,count:0};
+
+    finishRound(
+      'Winter deadline missed. Remaining snow caused '+remaining+' damage.'
+    );
+  }
+}
+
+// ------------------------------------------------------------
+// Main loop
+// ------------------------------------------------------------
+
+let lastHUD=0;
+const clock=new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const dt=Math.min(clock.getDelta(),.05);
+
+  if(gameStarted&&!modalOpen) {
+    movement(dt);
+    useEquipment();
+    updateWinter(dt);
+
+    if(seasonIndex===1&&marker.visible) {
+      markerRing.rotation.z+=dt*.25;
+    }
+
+    lastHUD+=dt;
+    if(lastHUD>.15) {
+      updateHUD();
+      lastHUD=0;
+    }
+  }
+
+  renderer.render(scene,camera);
+}
+
+// ------------------------------------------------------------
+// Start and pause
+// ------------------------------------------------------------
+
+$('play').addEventListener('click',()=>{
+  initAudio();
+
+  gameStarted=true;
+  $('overlay').classList.add('hidden');
+
+  controls.lock();
+
+  applySeason();
+  startRound();
+});
+
+controls.addEventListener('unlock',()=>{
+  mouseDown=false;
+  stopEquipmentSound();
+
+  if(gameStarted&&!modalOpen) {
+    $('overlay').innerHTML=`
+      <div class="dialog panel" style="max-width:390px;text-align:center">
+        <div class="eyebrow">Simulation paused</div>
+        <h2 style="font-size:27px;margin-top:16px">Take a break</h2>
+        <p class="muted" style="font-size:12px;line-height:1.7;margin:14px 0 24px">
+          Your property and current contract are waiting.
+        </p>
+        <button id="resume" class="primary" style="width:100%">RESUME WORK</button>
+      </div>
+    `;
+
+    $('overlay').classList.remove('hidden');
+
+    $('resume').onclick=()=>{
+      $('overlay').classList.add('hidden');
+      controls.lock();
+    };
+  }
+});
+
+controls.addEventListener('lock',()=>{
+  $('overlay').classList.add('hidden');
+});
+
+// ------------------------------------------------------------
+// Initialization
+// ------------------------------------------------------------
+
+buildToolbar();
+updateHUD();
+animate();
+
+</script>
+</body>
+</html>
